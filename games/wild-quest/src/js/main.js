@@ -1,5 +1,5 @@
 // =============================================================
-//  Wild Quest · Biodiversity Island — app shell & router
+//  Joycelyn Biodiversity Island (Wild Quest) — app shell & router
 // =============================================================
 import { h, gameFrame, modal, intro as introModal, toast as toastFn, ask as askFn } from './ui.js';
 import { art, creatureArt, preload } from './art.js';
@@ -79,16 +79,16 @@ function titleScreen() {
   const cast = h('div', { class: 'title-cast' }, ['frog', 'penguin', 'bat', 'cactus', 'bee'].map((a) => art(a)));
   const el = h('div', { class: 'title-screen' },
     h('div', {}, cast,
-      h('div', { class: 'logo' }, h('span', { class: 'l1' }, 'Wild Quest'), h('span', { class: 'l2' }, 'Biodiversity Island')),
+      h('div', { class: 'logo' }, h('span', { class: 'l1' }, 'Joycelyn'), h('span', { class: 'l2' }, 'Biodiversity Island')),
       h('div', {}, h('button', { class: 'btn go start', onclick: start }, 'Tap to explore'))),
-    h('div', { class: 'credit' }, 'P6 Science · Unit 1 Biodiversity'));
+    h('div', { class: 'credit' }, 'Wild Quest · P6 Science Unit 1'));
   stage.append(el);
   function start() {
     initAudio(); sfx.fanfare();
     setTimeout(() => playMusic('island'), 900);
     el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400 }).onfinish = () => el.remove();
     world && world.overview(2200);
-    setTimeout(showHub, 500);
+    setTimeout(() => { showHub(); toastFn(overlay, 'Welcome to Joycelyn Biodiversity Island! Tap a place to start.', { artId: 'desertisland', ms: 3200 }); }, 500);
   }
 }
 

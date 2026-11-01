@@ -234,6 +234,28 @@ export function createWorld(canvas, { onPick } = {}) {
   critter('giraffe', P.savanna.x + 1, P.savanna.z - 1, { s: 3.2 }); critter('zebra', P.savanna.x + 4, P.savanna.z + 2.5, { s: 2.4 }); critter('lion', P.savanna.x - 2, P.savanna.z + 4.5, { s: 2.4 }); critter('elephant', P.savanna.x - 4, P.savanna.z - 3, { s: 3 });
   const bot = critter('robot', 0, 0, { s: 3.4, y: H(0, 0) + 5.5 });
 
+
+  // Welcome sign on the beach
+  const signCv = document.createElement('canvas'); signCv.width = 1024; signCv.height = 300;
+  const signTex = new THREE.CanvasTexture(signCv); signTex.colorSpace = THREE.SRGBColorSpace; signTex.anisotropy = 4;
+  function drawSign() {
+    const g = signCv.getContext('2d'); const W = signCv.width, Hh = signCv.height;
+    g.fillStyle = '#B5824F'; g.fillRect(0, 0, W, Hh);
+    for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#A67444' : '#BF8C58'; g.fillRect(0, i * Hh / 4, W, Hh / 4 - 4); }
+    g.strokeStyle = '#6E4A2A'; g.lineWidth = 16; g.strokeRect(8, 8, W - 16, Hh - 16);
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    g.font = `130px 'Lilita One', 'Baloo 2', sans-serif`; g.lineWidth = 18; g.strokeStyle = '#1B2A41'; g.strokeText('Joycelyn', W / 2, 112); g.fillStyle = '#FFB627'; g.fillText('Joycelyn', W / 2, 112);
+    g.font = `70px 'Lilita One', 'Baloo 2', sans-serif`; g.lineWidth = 12; g.strokeText('Biodiversity Island', W / 2, 222); g.fillStyle = '#FFFFFF'; g.fillText('Biodiversity Island', W / 2, 222);
+    signTex.needsUpdate = true;
+  }
+  drawSign(); document.fonts && document.fonts.ready.then(drawSign);
+  {
+    const sx = 9.8, sz = 20.3; const sg = new THREE.Group(); sg.position.set(sx, H(sx, sz), sz); sg.rotation.y = -0.25; scene.add(sg);
+    [-2.6, 2.6].forEach((x) => add(new THREE.CylinderGeometry(.18, .24, 3.6, 6), mat('#6E4A2A'), x, 1.8, 0, sg));
+    const wood = mat('#8A5A33');
+    const front = new THREE.MeshStandardMaterial({ map: signTex, roughness: .9 });
+    add(new THREE.BoxGeometry(6.6, 1.95, .28), [wood, wood, wood, wood, front, wood], 0, 3.1, 0, sg);
+  }
   // ---------- zone labels ----------
   const labels = {}; const hits = [];
   function drawLabel(cv, title, stars, max) {

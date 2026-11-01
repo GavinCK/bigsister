@@ -1,4 +1,4 @@
-# 🐸 Wild Quest · Biodiversity Island（小六常識）
+# 🐸 Joycelyn Biodiversity Island（Wild Quest，小六常識）
 
 小六 GS（Science）Unit 1 Biodiversity 嘅溫習遊戲。一個 3D 生態島，7 個區域、12 個小遊戲，先有好玩嘅玩法，知識藏喺入面：要贏就要識。
 
@@ -68,4 +68,5 @@ games/wild-quest/
 
 ## 更新紀錄
 
+- 2026-11-01：個島改名做 Joycelyn Biodiversity Island（標題畫面、沙灘木牌、歡迎訊息）。資料夾同網址仍然係 `wild-quest`。
 - 2026-11-01：第一版。7 區 12 個小遊戲、Field Guide、Oops Book、家長頁；即時合成音樂同音效；單一 HTML build。

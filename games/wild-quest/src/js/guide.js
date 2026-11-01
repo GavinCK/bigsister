@@ -86,7 +86,7 @@ export function openParents(parent, onClose) {
   const { body } = bookShell(parent, 'For grown-ups', onClose);
   body.classList.add('parents');
   body.append(
-    h('p', {}, 'Wild Quest covers P6 General Studies (Science) Unit 1 Biodiversity: classification of living things, plants and environment, animals and environment. Every game is built around play first; the facts are what you need to win.'),
+    h('p', {}, 'Joycelyn Biodiversity Island (Wild Quest) covers P6 General Studies (Science) Unit 1 Biodiversity: classification of living things, plants and environment, animals and environment. Every game is built around play first; the facts are what you need to win.'),
     h('h3', {}, 'Where each exam question type is practised'),
     h('table', {}, h('tr', {}, h('th', {}, 'Question type in the workbook'), h('th', {}, 'Practised in')), COVERAGE.map((c) => h('tr', {}, h('td', {}, c.format), h('td', {}, c.games.join(', '))))),
     h('h3', {}, 'Good to know'),

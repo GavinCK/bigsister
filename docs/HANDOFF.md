@@ -144,7 +144,7 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 
 注意：
 - `bigsister` 已經轉做 public，Pages 由 `main` 根目錄出：大廳 `/bigsister/`、成語大冒險 `/bigsister/games/chengyu-adventure/`、Wild Quest `/bigsister/games/wild-quest/`。舊網址 `chengyu-adventure` repo 仍然有效（同網域，`localStorage` 進度共用）。
-- 因為 repo 係 public，唔好 commit 小朋友全名、學校名或者原本嘅工作紙 PDF。
+- 因為 repo 係 public：小朋友只用名（例如 Joycelyn），唔好 commit 姓氏、學校名或者原本嘅工作紙 PDF。
 - 同一個網域（`gavinck.github.io`）下面嘅遊戲共用 `localStorage`；唔同遊戲一定要用唔同 key。
 - iPad 唔可以喺「檔案」App 開 HTML，一定要經網址用 Safari 開，再「加入主畫面」。
 
@@ -160,7 +160,9 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 
 ---
 
-## 7. Wild Quest 生態島（小六常識 Unit 1 Biodiversity）
+## 7. Joycelyn Biodiversity Island（Wild Quest，小六常識 Unit 1 Biodiversity）
+
+個島用小朋友個名命名（Gavin 2026-11-01 要求）。程式入面仍然叫 Wild Quest，資料夾 `games/wild-quest`。
 
 詳細玩法、內容來源同「待確認」睇 `games/wild-quest/README.md`。
 

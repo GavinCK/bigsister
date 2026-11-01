@@ -14,12 +14,12 @@
 | 遊戲 | 資料夾 | 對象 | 內容 | 狀態 |
 |---|---|---|---|---|
 | 🐼 成語大冒險 | [`games/chengyu-adventure`](games/chengyu-adventure/) | 小六 | 成語、詞語、量詞、擬聲詞、複句、關聯詞、同音形近字、修辭 | 使用中 |
-| 🐸 Wild Quest 生態島 | [`games/wild-quest`](games/wild-quest/) | 小六 | 常識 Unit 1 Biodiversity：動物分類、植物與環境、動物與環境（英文） | 新 |
+| 🐸 Joycelyn Biodiversity Island（Wild Quest） | [`games/wild-quest`](games/wild-quest/) | 小六 | 常識 Unit 1 Biodiversity：動物分類、植物與環境、動物與環境（英文） | 新 |
 
 上線網址（呢個 repo 嘅 GitHub Pages）：
 - 遊戲大廳：https://gavinck.github.io/bigsister/
 - 成語大冒險：https://gavinck.github.io/bigsister/games/chengyu-adventure/（舊網址 https://gavinck.github.io/chengyu-adventure/ 仍然有效）
-- Wild Quest 生態島：https://gavinck.github.io/bigsister/games/wild-quest/
+- Joycelyn Biodiversity Island（Wild Quest）：https://gavinck.github.io/bigsister/games/wild-quest/
 
 ## 結構
 
@@ -31,7 +31,7 @@ bigsister/
 │   │   ├── index.html          成語大冒險（單一檔案）
 │   │   └── README.md           範圍、玩法、更新紀錄
 │   └── wild-quest/
-│       ├── index.html          Wild Quest 生態島（build 出嚟嘅單一檔案）
+│       ├── index.html          Joycelyn Biodiversity Island（build 出嚟嘅單一檔案）
 │       ├── src/                原始碼（改呢度，再 build）
 │       └── README.md
 ├── docs/
