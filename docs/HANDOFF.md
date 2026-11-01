@@ -156,3 +156,50 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 - 錯題全部入錯題簿（成績表），考試前可以專攻。
 - iPad 優先：按鈕夠大、`touch-action: manipulation`、唔用原生 `confirm()`（改用 `askConfirm()`）。
 - 尊重 `prefers-reduced-motion`。
+
+---
+
+## 7. Wild Quest 生態島（小六常識 Unit 1 Biodiversity）
+
+詳細玩法、內容來源同「待確認」睇 `games/wild-quest/README.md`。
+
+### 7.1 同成語大冒險唔同嘅地方
+
+- **原始碼係模組化**（`games/wild-quest/src/`，ES modules），因為有 3D 島（three.js）同 198 張圖。上線嘅 `games/wild-quest/index.html` 係 build 出嚟嘅單一檔案（約 2 MB），所有 JS、CSS、three.js、圖都 inline，冇網都玩得（Google Fonts 除外）。**唔好直接改 build 出嚟嗰個檔。**
+- 常識科用英文授課，所以介面同題目係英文；圖鑑卡附中文名。
+- 音樂同音效全部用 Web Audio 即時合成（`src/js/audio.js`），冇聲音檔。
+
+### 7.2 架構
+
+| 檔案 | 內容 |
+|---|---|
+| `src/js/data.js` | **全部學習內容**：`GROUPS`、`CREATURES`、`PLANTS`、`BIOMES`、每個小遊戲嘅資料表（`SORT_WAVES`、`LAB_*`、`DETECTIVE_CASES`、`FLOW_NODES`、`PLANT_*`、`AIRLIFT_*`、`SURVIVAL`、`HIDE_SCENES`、`PANIC_ROUNDS`、`FEEDERS`、`STATEMENTS`、`BLANKS`、`WHO_RIGHT`、`COVERAGE`） |
+| `src/js/main.js` | `ZONES`（7 區、12 個 mode）、標題畫面、島嶼大廳、`launch()` 遊戲啟動、`finish()` 結算、`MODS` 靜態模組表 |
+| `src/js/world.js` | three.js 低多邊形島、7 個區域標籤、動物 billboard、鏡頭飛行 |
+| `src/js/games/*.js` | 每個小遊戲一個檔，`export default async function play(api)` |
+| `src/js/games/faller.js` | 共用「跌落嚟分類」引擎（Sort Storm、Seed Sorter、Animal Airlift） |
+| `src/js/guide.js` | Field Guide、Oops Book、For grown-ups 頁 |
+| `src/js/store.js` | 進度：`localStorage` key `wildquest-bio-p6-v1`（星星、最高分、已解鎖卡、錯題） |
+| `src/js/art.js` | `art(id)`（Fluent 3D 貼紙圖）、`creatureArt(id)`、手繪 SVG（螳螂、竹節蟲、葉形海龍、鵜鶘、蜂鳥、鋸鰩、蕨、苔蘚、生石花、蕁麻、含羞草、紅樹……） |
+
+小遊戲收到嘅 `api`：`body`／`frame`（HUD：`setHearts`、`setScore`、`setCombo`、`setProgress`）、`intro()`、`ask()`、`toast()`、`wait()`、`loop()`、`learn(id)`（解鎖圖鑑卡）、`miss({key,q,you,ans,why})`（入錯題簿）、`finish({score,correct,total,stars?,won})`、`sfx`、`music()`、`fever()`。
+
+### 7.3 加內容
+
+- 加動物：`CREATURES` 加一項（`art` 用 `src/art/` 入面嘅檔名，或者 `svg:名`；`fx` 可以用 CSS filter 變色）。之後喺對應遊戲資料表引用佢個 id。
+- 加 Fact/Fake 句子：`STATEMENTS`，錯嗰個字用 `[ ]` 包住，`fix` 係正確字，`alts` 係兩個錯嘅改法。
+- 加填充：`BLANKS`，句子用 `___` 做空格，`a` 答案，`d` 三個干擾字。
+- 加新圖：將 Fluent Emoji 3D PNG 轉 256px webp 放入 `src/art/`。
+
+### 7.4 Build、測試、上線
+
+```bash
+node tools/build_wild_quest.mjs          # 生成 games/wild-quest/index.html（第一次會用 npx 下載 esbuild）
+python tools/smoke_wild_quest.py         # 資料檢查 + 12 個小遊戲 + Sort Storm 打通 + 4 個闊度冇橫向 scroll
+```
+
+開發時用 local server 開 `src/index.html`（ES modules 唔可以用 file:// 開）；網址加 `?no3d=1` 可以跳過 3D 島（測試用）。
+
+上線位：
+- 原始碼同 build 檔：呢個 repo `games/wild-quest/`（GitHub Pages 要 repo 係 public 或者另開 public repo，做法同第 5 節）。
+- 後備：Claude Artifact https://claude.ai/artifact/CQC1SWHwt51jtckznCKQf6（private；Gavin 喺 Share menu 分享先開到）。更新方法：將 build 出嚟嘅 HTML 去掉 `<!DOCTYPE>`／`<html>`／`<head>`／`<body>` 外殼再 publish 去同一條 URL。

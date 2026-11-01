@@ -14,6 +14,7 @@
 | 遊戲 | 資料夾 | 對象 | 內容 | 狀態 |
 |---|---|---|---|---|
 | 🐼 成語大冒險 | [`games/chengyu-adventure`](games/chengyu-adventure/) | 小六 | 成語、詞語、量詞、擬聲詞、複句、關聯詞、同音形近字、修辭 | 使用中 |
+| 🐸 Wild Quest 生態島 | [`games/wild-quest`](games/wild-quest/) | 小六 | 常識 Unit 1 Biodiversity：動物分類、植物與環境、動物與環境（英文） | 新 |
 
 現行上線網址（公開 repo `GavinCK/chengyu-adventure` 嘅 GitHub Pages）：
 https://gavinck.github.io/chengyu-adventure/
@@ -24,13 +25,19 @@ https://gavinck.github.io/chengyu-adventure/
 bigsister/
 ├── index.html                  遊戲大廳（列出所有遊戲）
 ├── games/
-│   └── chengyu-adventure/
-│       ├── index.html          成語大冒險（單一檔案）
-│       └── README.md           範圍、玩法、更新紀錄
+│   ├── chengyu-adventure/
+│   │   ├── index.html          成語大冒險（單一檔案）
+│   │   └── README.md           範圍、玩法、更新紀錄
+│   └── wild-quest/
+│       ├── index.html          Wild Quest 生態島（build 出嚟嘅單一檔案）
+│       ├── src/                原始碼（改呢度，再 build）
+│       └── README.md
 ├── docs/
 │   └── HANDOFF.md              交接文件：架構、資料格式、點樣加內容、部署
 ├── tools/
-│   └── smoke_test.py           自動打通測試（Playwright）
+│   ├── smoke_test.py           成語大冒險自動打通測試（Playwright）
+│   ├── build_wild_quest.mjs    將 wild-quest/src build 成單一 HTML
+│   └── smoke_wild_quest.py     Wild Quest 自動測試（Playwright）
 └── CLAUDE.md                   俾之後接手嘅 AI 睇嘅工作守則
 ```
 

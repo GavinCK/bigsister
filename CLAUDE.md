@@ -21,6 +21,7 @@
 - `localStorage` key 每個遊戲唔同，而且唔好改舊 key（會清走小朋友進度）；要加欄位就喺 `ensure()` 補預設值。
 - 成語大冒險嘅模組：第一章（global）、`C2`（第二章）、`DLC`（修辭樂園）；按鈕用 `data-go`／`data-c2`／`data-rh` 分派。
 - 主角係 Q 版熊貓「圈圈」（`catSVG()`）。
+- 例外：Wild Quest（`games/wild-quest`）原始碼係模組化，放喺 `src/`；改完要 `node tools/build_wild_quest.mjs` 生成單一 HTML，再跑 `python tools/smoke_wild_quest.py`。佢係常識科（英文授課），介面同題目用英文。
 
 ## 每次改完
 
