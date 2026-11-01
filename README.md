@@ -16,8 +16,10 @@
 | 🐼 成語大冒險 | [`games/chengyu-adventure`](games/chengyu-adventure/) | 小六 | 成語、詞語、量詞、擬聲詞、複句、關聯詞、同音形近字、修辭 | 使用中 |
 | 🐸 Wild Quest 生態島 | [`games/wild-quest`](games/wild-quest/) | 小六 | 常識 Unit 1 Biodiversity：動物分類、植物與環境、動物與環境（英文） | 新 |
 
-現行上線網址（公開 repo `GavinCK/chengyu-adventure` 嘅 GitHub Pages）：
-https://gavinck.github.io/chengyu-adventure/
+上線網址（呢個 repo 嘅 GitHub Pages）：
+- 遊戲大廳：https://gavinck.github.io/bigsister/
+- 成語大冒險：https://gavinck.github.io/bigsister/games/chengyu-adventure/（舊網址 https://gavinck.github.io/chengyu-adventure/ 仍然有效）
+- Wild Quest 生態島：https://gavinck.github.io/bigsister/games/wild-quest/
 
 ## 結構
 

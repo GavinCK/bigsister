@@ -138,12 +138,13 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 
 | 位置 | 用途 | 點樣更新 |
 |---|---|---|
-| `GavinCK/bigsister`（呢個 repo，private） | 原始碼主檔 | 正常 commit／push |
+| `GavinCK/bigsister`（呢個 repo，2026-11-01 起 **public**）→ https://gavinck.github.io/bigsister/ | 原始碼主檔＋遊戲大廳＋所有遊戲 | 正常 commit／push 去 `main`，GitHub Pages（main / root）大約 1 分鐘後生效 |
 | `GavinCK/chengyu-adventure`（public）→ https://gavinck.github.io/chengyu-adventure/ | 小朋友實際用緊嘅網址 | 將 `games/chengyu-adventure/index.html` 複製去嗰個 repo 嘅 `index.html`，commit＋push，大約 1 分鐘後生效 |
 | Claude Artifact 連結 | 後備 | 由 Claude 重新 publish |
 
 注意：
-- GitHub Pages 喺 private repo 要付費 plan，所以暫時用 public 嘅 `chengyu-adventure` repo 上線。
+- `bigsister` 已經轉做 public，Pages 由 `main` 根目錄出：大廳 `/bigsister/`、成語大冒險 `/bigsister/games/chengyu-adventure/`、Wild Quest `/bigsister/games/wild-quest/`。舊網址 `chengyu-adventure` repo 仍然有效（同網域，`localStorage` 進度共用）。
+- 因為 repo 係 public，唔好 commit 小朋友全名、學校名或者原本嘅工作紙 PDF。
 - 同一個網域（`gavinck.github.io`）下面嘅遊戲共用 `localStorage`；唔同遊戲一定要用唔同 key。
 - iPad 唔可以喺「檔案」App 開 HTML，一定要經網址用 Safari 開，再「加入主畫面」。
 
@@ -201,5 +202,5 @@ python tools/smoke_wild_quest.py         # 資料檢查 + 12 個小遊戲 + Sort
 開發時用 local server 開 `src/index.html`（ES modules 唔可以用 file:// 開）；網址加 `?no3d=1` 可以跳過 3D 島（測試用）。
 
 上線位：
-- 原始碼同 build 檔：呢個 repo `games/wild-quest/`（GitHub Pages 要 repo 係 public 或者另開 public repo，做法同第 5 節）。
+- 主網址：https://gavinck.github.io/bigsister/games/wild-quest/（push 去 `main` 就自動更新）。
 - 後備：Claude Artifact https://claude.ai/artifact/CQC1SWHwt51jtckznCKQf6（private；Gavin 喺 Share menu 分享先開到）。更新方法：將 build 出嚟嘅 HTML 去掉 `<!DOCTYPE>`／`<html>`／`<head>`／`<body>` 外殼再 publish 去同一條 URL。
