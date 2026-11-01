@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>學習遊戲室</title>
+<style>
+:root{--ink:#2B2140;--ink2:#5E5378;--sun:#FFC93C;--octo:#FF7EB3;--ghost:#B49CFF;--leaf:#45D08A;--sky:#5BC8FF;
+  --font:"PingFang HK","PingFang TC","Noto Sans HK","Noto Sans CJK HK","Microsoft JhengHei",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);color:var(--ink);min-height:100vh;
+  background:linear-gradient(180deg,#8FDBFF 0,#CDEFFF 380px,#EEFAFF 900px,#F4FFF7 100%)}
+main{max-width:980px;margin:0 auto;padding-block:28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hero{display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center;margin-bottom:24px}
+.hero h1{margin:0 0 6px;font-size:clamp(28px,5vw,40px);font-weight:900}
+.hero p{margin:0;font-size:17px;color:var(--ink2)}
+.cat{display:block;width:100%;height:auto}
+.cat .e-y,.cat .e-h,.cat .m-y,.cat .m-h{display:none}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.game{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:center;text-decoration:none;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);padding:14px 16px}
+.game:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.game:focus-visible{outline:3px solid #2E7DFF;outline-offset:3px}
+.game .ic{width:72px;height:72px;border-radius:18px;border:3px solid var(--ink);background:var(--c);display:grid;place-items:center;font-size:38px}
+.game b{display:block;font-size:20px;font-weight:900}
+.game span{font-size:14px;line-height:1.5}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tags i{font-style:normal;font-size:12px;font-weight:800;border:2px solid var(--ink);border-radius:999px;padding:0 8px;background:#FFF6D6}
+.soon{display:grid;place-items:center;border:3px dashed var(--ink2);border-radius:22px;padding:18px;text-align:center;color:var(--ink2);font-weight:800;background:rgba(255,255,255,.6)}
+@media (max-width:560px){.hero{grid-template-columns:1fr}.hero>div:first-child{width:130px}}
+@media (prefers-reduced-motion:reduce){.bob{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <div><svg class="cat bob" viewBox="0 0 200 212" aria-hidden="true">
+  <circle class="c-tail" cx="150" cy="188" r="9" fill="#FFFDF8" stroke="#3A3340" stroke-width="4"/>
+  <ellipse cx="100" cy="170" rx="50" ry="38" fill="#FFFDF8" stroke="#3A3340" stroke-width="4.5"/>
+  <ellipse cx="100" cy="178" rx="26" ry="20" fill="#F4EFE6"/>
+  <ellipse cx="70" cy="196" rx="20" ry="14" fill="#2F2B36"/><ellipse cx="130" cy="196" rx="20" ry="14" fill="#2F2B36"/>
+  <ellipse cx="70" cy="199" rx="9" ry="6.5" fill="#FFB7C5"/><ellipse cx="130" cy="199" rx="9" ry="6.5" fill="#FFB7C5"/>
+  <circle cx="61" cy="189" r="2.8" fill="#FFB7C5"/><circle cx="70" cy="187" r="2.8" fill="#FFB7C5"/><circle cx="79" cy="189" r="2.8" fill="#FFB7C5"/>
+  <circle cx="121" cy="189" r="2.8" fill="#FFB7C5"/><circle cx="130" cy="187" r="2.8" fill="#FFB7C5"/><circle cx="139" cy="189" r="2.8" fill="#FFB7C5"/>
+  <ellipse cx="62" cy="170" rx="13" ry="21" fill="#2F2B36" transform="rotate(-22 62 170)"/>
+  <path d="M62 150 Q100 170 138 150 L139 159 Q100 180 61 159 Z" fill="#FF5A6E" stroke="#3A3340" stroke-width="3.5" stroke-linejoin="round"/>
+  <circle cx="118" cy="166" r="6" fill="#FF5A6E" stroke="#3A3340" stroke-width="3"/>
+  <ellipse cx="138" cy="168" rx="13" ry="20" fill="#2F2B36" transform="rotate(26 138 168)"/>
+  <g class="c-brush" transform="translate(146 170) rotate(24)"><rect x="-4.5" y="-68" width="9" height="70" rx="4" fill="#E3A35B" stroke="#3A3340" stroke-width="3.5"/><rect x="-6.5" y="-74" width="13" height="8" rx="2" fill="#E8443A" stroke="#3A3340" stroke-width="3"/><path d="M-6.5 -74 Q0 -106 6.5 -74 Z" fill="#2F2B36" stroke="#3A3340" stroke-width="2.5" stroke-linejoin="round"/><circle cx="0" cy="0" r="12" fill="#2F2B36"/><ellipse cx="-2" cy="2" rx="5" ry="4" fill="#FFB7C5" opacity=".9"/></g>
+  <circle cx="48" cy="54" r="22" fill="#2F2B36"/><circle cx="50" cy="57" r="10" fill="#4C4556"/>
+  <circle cx="152" cy="54" r="22" fill="#2F2B36"/><circle cx="150" cy="57" r="10" fill="#4C4556"/>
+  <path d="M100 38 C148 38 170 68 169 102 C168 136 140 154 100 154 C60 154 32 136 31 102 C30 68 52 38 100 38Z" fill="#FFFDF8" stroke="#3A3340" stroke-width="4.5"/>
+  <ellipse cx="71" cy="106" rx="17" ry="23" fill="#2F2B36" transform="rotate(38 71 106)"/>
+  <ellipse cx="129" cy="106" rx="17" ry="23" fill="#2F2B36" transform="rotate(-38 129 106)"/>
+  
+  <g class="e-n"><g class="blink"><circle cx="75" cy="101" r="8.5" fill="#fff"/><circle cx="125" cy="101" r="8.5" fill="#fff"/><circle cx="76" cy="102" r="6" fill="#2F2B36"/><circle cx="124" cy="102" r="6" fill="#2F2B36"/><circle cx="78.4" cy="99.4" r="2.4" fill="#fff"/><circle cx="126.4" cy="99.4" r="2.4" fill="#fff"/><circle cx="74" cy="104.6" r="1.1" fill="#fff"/><circle cx="122" cy="104.6" r="1.1" fill="#fff"/></g></g>
+  <g class="e-y" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"><path d="M66 106 Q75 95 84 106"/><path d="M116 106 Q125 95 134 106"/></g>
+  <g class="e-h" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M69 97 L82 104 L69 111"/><path d="M131 97 L118 104 L131 111"/></g>
+  <ellipse cx="50" cy="126" rx="11" ry="6.5" fill="#FFB7C5" opacity=".85"/><ellipse cx="150" cy="126" rx="11" ry="6.5" fill="#FFB7C5" opacity=".85"/>
+  <ellipse cx="100" cy="121" rx="7.5" ry="5.2" fill="#2F2B36"/><ellipse cx="98" cy="119.5" rx="2.4" ry="1.4" fill="#fff" opacity=".8"/>
+  <g class="m-n"><path d="M93 129 Q96.5 134 100 129 Q103.5 134 107 129" fill="none" stroke="#3A3340" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g class="m-y"><path d="M91 128 Q100 143 109 128 Z" fill="#FF7E92" stroke="#3A3340" stroke-width="3" stroke-linejoin="round"/></g>
+  <g class="m-h"><path d="M93 135 Q100 128 107 135" fill="none" stroke="#3A3340" stroke-width="3" stroke-linecap="round"/><path d="M156 84 q5 10 0 14 q-5 -4 0 -14z" fill="#7FD3FF" stroke="#3A3340" stroke-width="2"/></g>
+</svg></div>
+    <div>
+      <h1>學習遊戲室</h1>
+      <p>圈圈陪你一路玩一路學。揀一個遊戲開始啦！</p>
+    </div>
+  </div>
+  <div class="grid">
+    <a class="game" href="games/chengyu-adventure/index.html" style="--c:var(--sun)">
+      <span class="ic">🐼</span>
+      <span><b>成語大冒險</b>成語、詞語、量詞、擬聲詞、複句、關聯詞、錯別字同修辭，打怪獸、尋寶、做偵探。
+        <span class="tags"><i>中文</i><i>小六</i><i>第一章＋第二章＋修辭樂園</i></span></span>
+    </a>
+    <div class="soon">更多遊戲陸續加入 ✨</div>
+  </div>
+</main>
+</body>
+</html>
