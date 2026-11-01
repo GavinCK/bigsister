@@ -24,13 +24,14 @@ export const starsFor = (acc, finished = true) => !finished ? (acc >= .6 ? 1 : 0
 // ---------- game frame ----------
 export function gameFrame({ title, hearts = 0, score = true, progress = true, bg = '', onExit }) {
   const heartsEl = h('div', { class: 'hearts' });
-  const heartArr = [];
-  for (let i = 0; i < hearts; i++) { const a = art('heart'); heartArr.push(a); heartsEl.append(a); }
+  let heartArr = [];
+  const buildHearts = (n) => { heartsEl.innerHTML = ''; heartArr = []; for (let i = 0; i < n; i++) { const a = art('heart'); heartArr.push(a); heartsEl.append(a); } };
+  buildHearts(hearts);
   const scoreEl = h('div', { class: 'scorebox' }, '0');
   const comboEl = h('div', { class: 'combo hide' }, 'x2');
   const prog = h('div', { class: 'progress' }, h('i'));
   const exitBtn = h('button', { class: 'iconbtn', 'aria-label': 'Back to the island', onclick: () => onExit && onExit() }, art('worldmap'));
-  const hud = h('div', { class: 'game-hud' }, exitBtn, h('div', { class: 'gtitle' }, title), progress ? prog : null, h('div', { class: 'spacer' }), comboEl, hearts ? heartsEl : null, score ? scoreEl : null);
+  const hud = h('div', { class: 'game-hud' }, exitBtn, h('div', { class: 'gtitle' }, title), progress ? prog : null, h('div', { class: 'spacer' }), comboEl, heartsEl, score ? scoreEl : null);
   const body = h('div', { class: 'game-body' });
   const root = h('div', { class: `game ${bg}`.trim() }, hud, body);
   let shownScore = 0, targetScore = 0, raf = 0;
@@ -41,7 +42,10 @@ export function gameFrame({ title, hearts = 0, score = true, progress = true, bg
   }
   return {
     root, body, hud,
-    setHearts(n) { heartArr.forEach((a, i) => a.classList.toggle('lost', i >= n)); },
+    setHearts(n, max) {
+      if (max != null && max !== heartArr.length) buildHearts(max);
+      heartArr.forEach((a, i) => { const was = a.classList.contains('lost'); a.classList.toggle('lost', i >= n); if (!was && i >= n) a.animate([{ transform: 'scale(1.5)' }, { transform: 'scale(.8)' }], { duration: 300 }); });
+    },
     setScore(n) { targetScore = n; cancelAnimationFrame(raf); if (n < shownScore) { shownScore = n; scoreEl.textContent = n; } else tickScore(); },
     setCombo(n) { comboEl.classList.toggle('hide', n < 2); comboEl.textContent = `x${n} combo`; if (n >= 2) comboEl.animate([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 200 }); },
     setProgress(f) { prog.firstChild.style.width = `${clamp(f, 0, 1) * 100}%`; },
@@ -57,13 +61,14 @@ export function modal(parent, ...content) {
   return { wrap, box, close() { wrap.remove(); } };
 }
 
-export function intro(parent, { title, artId, how = [], learn, start = "Let's go!" }) {
+export function intro(parent, { title, artId, artEl, how = [], learn, start = "Let's go!", extra }) {
   return new Promise((resolve) => {
     const m = modal(parent,
-      artId ? art(artId, { cls: 'hero-art' }) : null,
+      artEl || (artId ? art(artId, { cls: 'hero-art' }) : null),
       h('h2', {}, title),
       h('div', { class: 'howto' }, how.map(([a, t]) => h('div', {}, art(a), h('span', {}, t)))),
       learn ? h('p', { class: 'learnline' }, learn) : null,
+      extra || null,
       h('div', { class: 'actions' }, h('button', { class: 'btn go', onclick: () => { m.close(); resolve(); } }, start)),
     );
     setTimeout(() => m.box.querySelector('.btn')?.focus(), 50);

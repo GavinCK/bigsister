@@ -3,6 +3,7 @@ import { PLANTS, SEED_SORT } from '../data.js';
 import { makeArena, runItems, banner } from './faller.js';
 import { shuffle } from '../ui.js';
 
+export const TIMED = true;
 export const HEARTS = 4;
 
 const WHY = {
@@ -19,7 +20,7 @@ export default async function play(api) {
     how: [['seedling', 'Plants float down from the greenhouse roof'], ['joystick', 'Tap the right basket'], ['heart', '4 hearts — careful!']],
     learn: 'Plants can be classified as flowering or non-flowering, and as land or water plants.',
   });
-  const state = { score: 0, hearts: HEARTS, combo: 0, maxCombo: 0, correct: 0, total: 0, goal: 16 };
+  const state = { score: 0, hearts: api.hearts(HEARTS), combo: 0, maxCombo: 0, correct: 0, total: 0, goal: 16 };
   api.frame.setHearts(state.hearts);
   let arena = null;
   for (const round of SEED_SORT) {

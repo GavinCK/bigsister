@@ -235,6 +235,59 @@ export function createWorld(canvas, { onPick } = {}) {
   const bot = critter('robot', 0, 0, { s: 3.4, y: H(0, 0) + 5.5 });
 
 
+  // ---------- dynamic things: decorations, Joycelyn + pet, zone bosses ----------
+  const dyn = [];
+  function sprite(id, x, y, z, size, { tint = null, opacity = 1 } = {}) {
+    const m = new THREE.SpriteMaterial({ map: tex(id), transparent: true, alphaTest: .05, opacity });
+    if (tint) m.color = new THREE.Color(tint);
+    const sp = new THREE.Sprite(m); sp.scale.set(size, size, size); sp.position.set(x, y, z); scene.add(sp); return sp;
+  }
+  const DECOR_SPOT = {
+    hut: [-8.5, 19, 2.6], tent: [-17.5, 12, 2.2], house: [6, -12.5, 3], carousel: [8.5, 13.5, 2.8], cake: [-6.5, 11.5, 2.6], moai: [-6.5, -12.5, 3],
+    ferriswheel: [20.5, 0, 5.8], jcastle: [-10.5, -17.5, 4.6], castle: [10.5, -17.5, 5], rollercoaster: [-20.5, 0, 5.6], fountain: [12.5, -1.5, 2.6], snowman: [-3.5, -20.5, 2.6],
+  };
+  const decorObjs = {};
+  function makeDecor(id) {
+    const ART = { tent: 'camping' };
+    if (DECOR_SPOT[id]) {
+      const [x, z, s] = DECOR_SPOT[id];
+      const sp = sprite(ART[id] || id, x, H(x, z) + s * .45, z, s);
+      return { objs: [sp], update(el) { sp.position.y = H(x, z) + s * .45 + Math.sin(el * 1.3 + x) * .08; } };
+    }
+    if (id === 'sailboat') { const sp = sprite('sailboat', 0, .9, 0, 3); return { objs: [sp], update(el) { const a = el * .08; sp.position.set(Math.cos(a) * 31, .9 + Math.sin(el * 1.5) * .2, Math.sin(a) * 31); } }; }
+    if (id === 'kite') { const sp = sprite('kite', 0, 16, 0, 2.6); return { objs: [sp], update(el) { sp.position.set(-12 + Math.sin(el * .5) * 3, 15 + Math.sin(el * 1.1) * 1.2, 10 + Math.cos(el * .4) * 2); } }; }
+    if (id === 'rainbow') { const sp = sprite('rainbow', 0, 14, -26, 22, { opacity: .85 }); return { objs: [sp], update() {} }; }
+    if (id === 'fireworks') {
+      const sps = [0, 1, 2].map(() => sprite('fireworks', 0, 20, 0, 1, { opacity: 0 }));
+      sps.forEach((sp, i) => { sp.userData.t = i / 3; });
+      return { objs: sps, update(el, dt) { sps.forEach((sp) => { sp.userData.t += dt * .35; if (sp.userData.t > 1) { sp.userData.t = 0; const a = Math.random() * 6.28; sp.position.set(Math.cos(a) * 14, 18 + Math.random() * 6, Math.sin(a) * 14); } const t = sp.userData.t; sp.scale.setScalar(1 + t * 6); sp.material.opacity = t < .15 ? t / .15 : Math.max(0, 1 - (t - .15) / .85); }); } };
+    }
+    return null;
+  }
+  // Joycelyn and her pet stand by the welcome sign
+  const AVX = 1.4, AVZ = 19.2, PTX = -.1, PTZ = 19.9; // open sand in front of the Ark, not hidden by palms
+  const av = { body: sprite('c-scientist', AVX, H(AVX, AVZ) + 1.3, AVZ, 2.6), pet: null, petId: null, bodyId: 'c-scientist' };
+  dyn.push({ update(el) { av.body.position.y = H(AVX, AVZ) + 1.3 + Math.abs(Math.sin(el * 2.4)) * .35; if (av.pet) av.pet.position.y = H(PTX, PTZ) + .8 + Math.abs(Math.sin(el * 3 + 1)) * .45; } });
+  // Zone bosses
+  const BOSS_SPOT = {
+    beach: { x: 8, z: 27, y: () => 1.6, s: 4.2, tint: '#C9A8FF', move: (o, el) => { o.position.x = 8 + Math.sin(el * .6) * 1.5; o.position.y = 1.4 + Math.sin(el * 1.8) * .4; } },
+    lab: { x: 19, z: 5, y: () => H(19, 5) + 5, s: 3, move: (o, el) => { o.position.y = H(19, 5) + 5 + Math.sin(el * 2.2) * .6; } },
+    greenhouse: { x: 19, z: -11.5, y: () => H(19, -11.5) + 1.6, s: 3.2, crown: true },
+    peaks: { x: 4.5, z: -13.5, y: () => H(4.5, -13.5) + 1.5, s: 3, tint: '#D6F2FF' },
+    jungle: { x: -15, z: -8, y: () => 11, s: 3.6, tint: '#8A6FD0', move: (o, el) => { const a = el * .5; o.position.set(-15 + Math.cos(a) * 5, 11 + Math.sin(el * 1.4) * .8, -8 + Math.sin(a) * 5); } },
+    savanna: { x: -19.5, z: 12, y: () => H(-19.5, 12) + 1.3, s: 3.2 },
+  };
+  const bosses = {};
+  dyn.push({ update(el) {
+    Object.entries(bosses).forEach(([k, b]) => {
+      const spot = BOSS_SPOT[k];
+      if (b.state === 'beaten') { b.sp.position.y = spot.y() - spot.s * .2 + Math.abs(Math.sin(el * 2 + 1)) * .3; return; }
+      if (spot.move && b.state === 'open') spot.move(b.sp, el); else b.sp.position.y = spot.y() + (b.state === 'open' ? Math.abs(Math.sin(el * 3)) * .5 : Math.sin(el * .8) * .1);
+      if (b.crown) b.crown.position.set(b.sp.position.x, b.sp.position.y + spot.s * .55, b.sp.position.z);
+      if (b.zzz) { b.zzz.position.set(spot.x + 1.2, spot.y() + spot.s * .6 + (el * .6 % 1), spot.z); b.zzz.material.opacity = 1 - (el * .6 % 1); }
+    });
+  } });
+
   // Welcome sign on the beach
   const signCv = document.createElement('canvas'); signCv.width = 1024; signCv.height = 300;
   const signTex = new THREE.CanvasTexture(signCv); signTex.colorSpace = THREE.SRGBColorSpace; signTex.anisotropy = 4;
@@ -258,7 +311,7 @@ export function createWorld(canvas, { onPick } = {}) {
   }
   // ---------- zone labels ----------
   const labels = {}; const hits = [];
-  function drawLabel(cv, title, stars, max) {
+  function drawLabel(cv, title, stars, max, crown) {
     const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height);
     const W = cv.width, Hh = cv.height;
     g.fillStyle = '#1B2A41'; roundRect(g, 6, 10, W - 12, Hh - 22, 40); g.fill();
@@ -267,7 +320,7 @@ export function createWorld(canvas, { onPick } = {}) {
     g.font = `56px 'Lilita One', 'Baloo 2', sans-serif`; g.fillText(title, W / 2, 58);
     g.font = `40px sans-serif`;
     let s = ''; for (let i = 0; i < max; i++) s += i < stars ? '★' : '☆';
-    g.fillStyle = '#E08E00'; g.fillText(s, W / 2, 118);
+    g.fillStyle = '#E08E00'; g.fillText(crown ? `♛ ${s}` : s, W / 2, 118);
   }
   function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function makeLabel(id, title, stars, max) {
@@ -337,6 +390,7 @@ export function createWorld(canvas, { onPick } = {}) {
       else c.position.y = u.base + Math.abs(Math.sin(el * 2.2 * u.sp + u.ph)) * .5;
     });
     bot.position.y = H(0, 0) + 5.5 + Math.sin(el * 1.6) * .6;
+    dyn.forEach((d) => d.update(el, dt)); Object.values(decorObjs).forEach((d) => d.update(el, dt));
     Object.values(labels).forEach((l) => { l.position.y = l.userData.y + Math.sin(el * 1.5 + l.userData.ph) * .25; });
     renderer.render(scene, camera);
   }
@@ -344,7 +398,30 @@ export function createWorld(canvas, { onPick } = {}) {
 
   return {
     addZone(id, title, stars, max) { makeLabel(id, title, stars, max); },
-    updateZone(id, stars, max) { const l = labels[id]; if (!l) return; drawLabel(l.userData.cv, l.userData.title, stars, max); l.userData.tex.needsUpdate = true; },
+    updateZone(id, stars, max, crown) { const l = labels[id]; if (!l) return; drawLabel(l.userData.cv, l.userData.title, stars, max, crown); l.userData.tex.needsUpdate = true; },
+    setDecor(list) {
+      list.forEach((id) => { if (decorObjs[id]) return; const d = makeDecor(id); if (d) decorObjs[id] = d; });
+      Object.keys(decorObjs).forEach((id) => { if (!list.includes(id)) { decorObjs[id].objs.forEach((o) => scene.remove(o)); delete decorObjs[id]; } });
+    },
+    setAvatar(costume, pet) {
+      if (costume !== av.bodyId) { av.bodyId = costume; av.body.material.map = tex(costume); av.body.material.needsUpdate = true; }
+      if (pet !== av.petId) { av.petId = pet; if (av.pet) { scene.remove(av.pet); av.pet = null; } if (pet) av.pet = sprite(pet, PTX, H(PTX, PTZ) + .8, PTZ, 1.6); }
+    },
+    setBoss(zone, { art: id, beaten, open }) {
+      const spot = BOSS_SPOT[zone]; if (!spot) return;
+      const state = beaten ? 'beaten' : open ? 'open' : 'sleep';
+      let b = bosses[zone];
+      if (b && b.state === state) return;
+      if (b) { [b.sp, b.crown, b.zzz].forEach((o) => o && scene.remove(o)); }
+      b = { state };
+      if (state === 'beaten') b.sp = sprite('trophy', spot.x, spot.y(), spot.z, 1.8);
+      else {
+        b.sp = sprite(id, spot.x, spot.y(), spot.z, spot.s, { tint: spot.tint, opacity: state === 'sleep' ? .75 : 1 });
+        if (spot.crown) b.crown = sprite('crown', spot.x, spot.y() + spot.s * .55, spot.z, 1.4);
+        if (state === 'sleep') b.zzz = sprite('zzz', spot.x + 1.2, spot.y() + spot.s * .6, spot.z, 1.3);
+      }
+      bosses[zone] = b;
+    },
     redrawLabels(fn) { Object.keys(labels).forEach((id) => { const [s, m] = fn(id); this.updateZone(id, s, m); }); },
     async focus(id) {
       controls.autoRotate = false;

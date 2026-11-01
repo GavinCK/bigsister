@@ -4,6 +4,7 @@ import { h, sample, shuffle } from '../ui.js';
 import { art, creatureArt } from '../art.js';
 import { burstAt, floatAt, shake } from '../fx.js';
 
+export const TIMED = true;
 export const HEARTS = 4;
 const SEA = ['sardine', 'seadragon', 'flatfish'];
 const SNOW = ['harpseal', 'arctichare'];
@@ -16,7 +17,7 @@ export default async function play(api) {
     how: [['shark', 'A predator charges at the animal'], ['shield', 'Tap the defence this animal uses'], ['stopwatch', 'Faster each round!']],
     learn: 'Four ways animals protect themselves: protective colouration, mimicry, warning, living in groups.',
   });
-  let hearts = HEARTS, score = 0, correct = 0, total = 0, streak = 0;
+  let hearts = api.hearts(HEARTS), score = 0, correct = 0, total = 0, streak = 0;
   api.frame.setHearts(hearts);
 
   const stageEl = h('div', { class: 'pp-stage' });
@@ -37,7 +38,7 @@ export default async function play(api) {
     pred.className = 'pp-pred'; pred.innerHTML = ''; pred.append(creatureArt(R.predator));
     name.innerHTML = ''; name.append(h('b', {}, c.name), h('span', {}, ` vs ${CREATURES[R.predator].name}`));
     const W = stageEl.clientWidth;
-    const dur = Math.max(2.6, 5.2 - k * .25);
+    const dur = Math.max(2.6, 5.2 - k * .25) * api.slow;
     const run = pred.animate([{ transform: `translateX(${W}px)` }, { transform: `translateX(${W * .36}px)` }], { duration: dur * 1000, fill: 'forwards', easing: 'cubic-bezier(.4,0,.9,.6)' });
     api.sfx.whoosh();
     const t0 = performance.now();
@@ -64,7 +65,7 @@ export default async function play(api) {
       await api.wait(1700);
       btn.classList.remove('right');
     } else {
-      streak = 0; api.frame.setCombo(0); hearts--; api.frame.setHearts(hearts);
+      streak = 0; api.frame.setCombo(0); hearts = api.loseHeart(hearts);
       btn && btn.classList.add('wrong');
       const right = btns.filter((b) => R.answer.includes(b.dataset.id)); right.forEach((b) => b.classList.add('hint'));
       pred.animate([{ transform: getComputedStyle(pred).transform }, { transform: `translateX(${W * .2}px) scale(1.2)` }], { duration: 250, fill: 'forwards' });

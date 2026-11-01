@@ -4,6 +4,7 @@ import { h, shuffle, sample } from '../ui.js';
 import { art, creatureArt } from '../art.js';
 import { burstAt, floatAt, shake } from '../fx.js';
 
+export const TIMED = true;
 export const HEARTS = 4;
 
 function pickSet(n, used) {
@@ -20,7 +21,7 @@ export default async function play(api) {
     how: [['meat', 'A dish slides down the counter'], ['giraffe', 'Tap the animal whose body is built to eat it'], ['stopwatch', 'Serve it before it gets cold!']],
     learn: 'Beaks, necks, teeth, claws and forelegs help animals get their food.',
   });
-  let hearts = HEARTS, score = 0, correct = 0, total = 0, streak = 0;
+  let hearts = api.hearts(HEARTS), score = 0, correct = 0, total = 0, streak = 0;
   api.frame.setHearts(hearts);
 
   const counter = h('div', { class: 'ff-counter' });
@@ -46,7 +47,7 @@ export default async function play(api) {
       plate.innerHTML = ''; plate.append(art(f.foodArt), h('span', { class: 'ff-food' }, f.food));
       plate.className = 'ff-plate in';
       api.sfx.whoosh();
-      const T = Math.max(5, 9 - s * 1.5);
+      const T = Math.max(5, 9 - s * 1.5) * api.slow;
       const t0 = performance.now();
       const res = await new Promise((resolve) => {
         let done = false;
@@ -76,7 +77,7 @@ export default async function play(api) {
       if (!api.alive) return;
       const table = tEls.find((t) => t.dataset.id === f.id);
       if (res === 'late') {
-        hearts--; api.frame.setHearts(hearts); streak = 0; api.frame.setCombo(0); total++;
+        hearts = api.loseHeart(hearts); streak = 0; api.frame.setCombo(0); total++;
         api.sfx.lose(); plate.classList.add('cold'); table.classList.add('hint');
         api.toast(h('span', {}, h('b', {}, `${CREATURES[f.id].name}! `), `Its ${f.feature.toLowerCase()} ${f.does}.`), { kind: 'bad', artId: 'bulb', ms: 2600 });
         api.miss({ key: `feed:${f.id}`, q: `Who eats ${f.food}?`, you: 'too slow', ans: `${CREATURES[f.id].name} — ${f.feature.toLowerCase()}`, why: `Its ${f.feature.toLowerCase()} ${f.does}.` });

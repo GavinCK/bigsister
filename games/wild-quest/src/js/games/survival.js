@@ -6,6 +6,8 @@ import { burstAt, floatAt, shake } from '../fx.js';
 
 const METER_ICON = { 'Body heat': 'thermometer', Cooling: 'hotface', Water: 'droplet', Energy: 'zap' };
 
+export const TIMED = true;
+
 export default async function play(api) {
   api.music('lab');
   await api.intro({
@@ -71,7 +73,7 @@ export default async function play(api) {
       api.loop((dt) => {
         if (over) return false;
         const unset = R.traits.length - setCount;
-        level -= dt * (unset ? 2.2 + unset * 1.6 : 0);
+        level -= dt * (unset ? 2.2 + unset * 1.6 : 0) / api.slow; api.intensity(level < 28 && unset ? 1 : 0);
         setMeter(level);
         if (setCount === R.traits.length) { over = true; resolve('win'); return false; }
         if (level <= 0) { over = true; resolve('lose'); return false; }
@@ -79,6 +81,7 @@ export default async function play(api) {
       });
     });
     if (!api.alive) return;
+    api.intensity(0);
     if (result === 'win') {
       saved++; const bonus = Math.round(level * 2); score += bonus; api.frame.setScore(score);
       hero.className = 'sv-hero happy'; api.sfx.win(); burstAt(hero, { n: 30 }); floatAt(hero, `SURVIVED! +${bonus}`, '#FFE066');

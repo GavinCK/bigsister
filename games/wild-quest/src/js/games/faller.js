@@ -60,7 +60,7 @@ export function runItems(api, arena, items, state, opts = {}) {
       if (!cur || !falling) return true;
       const H = area.clientHeight;
       const speedMul = (opts.speed || 1) * (1 + Math.min(state.combo, 10) * .025);
-      y += (H / fallTime) * speedMul * dt; sway += dt * 2.2;
+      y += (H / (fallTime * api.slow)) * speedMul * dt; sway += dt * 2.2;
       place();
       if (y + cur.el.offsetHeight > H - 4) { falling = false; miss(null); }
       return idx < items.length && state.hearts > 0;
@@ -97,7 +97,7 @@ export function runItems(api, arena, items, state, opts = {}) {
 
     function miss(id, binEl) {
       const it = cur.it;
-      state.combo = 0; state.total++; state.hearts--;
+      state.combo = 0; state.total++; state.hearts = api.loseHeart(state.hearts);
       if (state.fever) { state.fever = false; api.fever(false); arena.wrap.classList.remove('fever'); }
       api.frame.setCombo(0); api.frame.setHearts(state.hearts);
       api.sfx.bad(); shake(arena.wrap);

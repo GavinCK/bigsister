@@ -4,6 +4,7 @@ import { makeArena, runItems, banner } from './faller.js';
 import { sample, shuffle } from '../ui.js';
 import { art } from '../art.js';
 
+export const TIMED = true;
 export const HEARTS = 5;
 
 const WHY = {
@@ -21,7 +22,7 @@ export default async function play(api) {
 
   const bins = GROUP_ORDER.map((g) => ({ id: g, label: GROUPS[g].name, art: GROUPS[g].icon, color: GROUPS[g].color }));
   const arena = makeArena(api, { bins, sky: 'sky-storm' });
-  const state = { score: 0, hearts: HEARTS, combo: 0, maxCombo: 0, correct: 0, total: 0, goal: 30 };
+  const state = { score: 0, hearts: api.hearts(HEARTS), combo: 0, maxCombo: 0, correct: 0, total: 0, goal: 30 };
   api.frame.setHearts(state.hearts);
 
   for (const wave of SORT_WAVES) {

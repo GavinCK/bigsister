@@ -3,6 +3,7 @@ import { STATEMENTS, BLANKS, WHO_RIGHT } from '../data.js';
 import { h, sample, shuffle } from '../ui.js';
 import { art } from '../art.js';
 import { burstAt, floatAt, shake, confetti } from '../fx.js';
+import { avatarEl } from '../economy.js';
 
 export const HEARTS = 5;
 
@@ -14,7 +15,7 @@ export default async function play(api) {
     learn: 'Final revision: true or false with corrections, fill in the blanks, and data analysis — all of Unit 1.',
     start: 'Fight!',
   });
-  let hearts = HEARTS, correct = 0, total = 0, score = 0;
+  let hearts = api.hearts(HEARTS), correct = 0, total = 0, score = 0;
   api.frame.setHearts(hearts);
 
   const stmts = [...sample(STATEMENTS.filter((s) => s.ok), 3), ...sample(STATEMENTS.filter((s) => !s.ok), 5)];
@@ -27,7 +28,7 @@ export default async function play(api) {
   // ----- arena -----
   const botEl = h('div', { class: 'fb-bot' }, art('robot'));
   const hpBar = h('div', { class: 'fb-hp' }, h('span', {}, 'FAKE-BOT'), h('div', {}, h('i')));
-  const hero = h('div', { class: 'fb-hero' }, art('scientist'));
+  const hero = h('div', { class: 'fb-hero' }, avatarEl(150));
   const card = h('div', { class: 'fb-card' });
   const zone = h('div', { class: 'fb-zone' });
   const arena = h('div', { class: 'fb-arena' }, h('div', { class: 'fb-lava' }), hpBar, botEl, hero, card, zone);
@@ -193,7 +194,7 @@ export default async function play(api) {
     await api.wait(700); botEl.classList.remove('hit');
   }
   async function hurt(msg) {
-    hearts--; api.frame.setHearts(hearts);
+    hearts = api.loseHeart(hearts);
     botEl.classList.add('attack'); api.sfx.zap();
     await api.wait(250);
     hero.classList.add('hurt'); api.sfx.bad(); shake(arena);

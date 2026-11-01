@@ -4,6 +4,7 @@ import { makeArena, runItems, banner } from './faller.js';
 import { sample, shuffle, h } from '../ui.js';
 import { art } from '../art.js';
 
+export const TIMED = true;
 export const HEARTS = 5;
 
 function biomeDoor(id) {
@@ -20,7 +21,7 @@ export default async function play(api) {
   });
   const bins = BIOME_ORDER.map((id) => ({ id, label: BIOMES[id].name, artEl: biomeDoor(id), color: BIOMES[id].color }));
   const arena = makeArena(api, { bins, sky: 'sky-balloon' });
-  const state = { score: 0, hearts: HEARTS, combo: 0, maxCombo: 0, correct: 0, total: 0, goal: 20 };
+  const state = { score: 0, hearts: api.hearts(HEARTS), combo: 0, maxCombo: 0, correct: 0, total: 0, goal: 20 };
   api.frame.setHearts(state.hearts);
 
   const animals = sample(AIRLIFT_ANIMALS, 12).map((id) => {

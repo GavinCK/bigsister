@@ -10,6 +10,8 @@ const CAMO = {
 };
 const DECOY_FX = { snow: 'brightness(1.08)', savanna: 'sepia(.35) saturate(1.1)', meadow: '', twigs: '', kelp: 'hue-rotate(-20deg) saturate(.8)', sand: 'sepia(.4)', leaves: '' };
 
+export const TIMED = true;
+
 export default async function play(api) {
   api.music('jungle');
   await api.intro({
@@ -53,8 +55,8 @@ export default async function play(api) {
     // a few decoys on top of the target edges for some scenes
     if (['savanna', 'meadow', 'kelp'].includes(S.bg)) for (let i = 0; i < 2; i++) scene.append(h('div', { class: 'hs-decoy over', style: { left: `${tx + (i ? 3 : -3)}%`, top: `${ty + 4}%`, width: '70px', height: '70px', transform: `translate(-50%,-50%) rotate(${i ? 20 : -15}deg)`, zIndex: 5, pointerEvents: 'none' } }, art(pick(S.decoys), { sticker: false, fx: DECOY_FX[S.bg] })));
 
-    let done = false, timeLeft = 25, hinted = false;
-    const TOTAL = 25;
+    let done = false, timeLeft = 25 * api.slow, hinted = false;
+    const TOTAL = 25 * api.slow;
     hintBtn.disabled = false;
     hintBtn.onclick = () => { if (done || hinted) return; hinted = true; hintBtn.disabled = true; api.sfx.tap(); scene.append(h('div', { class: 'hs-ring', style: { left: `${tx + (Math.random() * 10 - 5)}%`, top: `${ty + (Math.random() * 10 - 5)}%` } })); };
     const res = await new Promise((resolve) => {
@@ -62,13 +64,13 @@ export default async function play(api) {
       api.loop((dt) => {
         if (done) return false;
         timeLeft -= dt; timer.firstChild.style.width = `${Math.max(0, timeLeft / TOTAL) * 100}%`;
-        timer.classList.toggle('low', timeLeft < 7);
+        timer.classList.toggle('low', timeLeft < 7); api.intensity(timeLeft < 7 ? 1 : 0);
         if (timeLeft <= 0) { done = true; resolve('timeout'); return false; }
         return true;
       });
     });
     if (!api.alive) return;
-    scene.querySelector('.hs-ring')?.remove();
+    scene.querySelector('.hs-ring')?.remove(); api.intensity(0);
     target.classList.add('caught');
     if (res === 'found') {
       found++; const pts = 100 + Math.round(Math.max(0, timeLeft) * 8) - (hinted ? 50 : 0); score += pts; api.frame.setScore(score);

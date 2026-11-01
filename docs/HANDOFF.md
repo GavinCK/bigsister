@@ -182,10 +182,18 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 | `src/js/games/*.js` | 每個小遊戲一個檔，`export default async function play(api)` |
 | `src/js/games/faller.js` | 共用「跌落嚟分類」引擎（Sort Storm、Seed Sorter、Animal Airlift） |
 | `src/js/guide.js` | Field Guide、Oops Book、For grown-ups 頁 |
-| `src/js/store.js` | 進度：`localStorage` key `wildquest-bio-p6-v1`（星星、最高分、已解鎖卡、錯題） |
+| `src/js/items.js` | 商店貨品（`COSTUMES`、`PETS`、`DECOR`、`POWERUPS`）、`BOSS_PRIZES`、`ROAD`（Star Road 里程碑）。`only: 'boss' / 'road'` 即係買唔到 |
+| `src/js/economy.js` | `openShop`、`openRoad`、`openGift`、`grant`（已擁有就退星）、`powerTray`（開波前揀道具）、`avatarEl` |
+| `src/js/bosses.js` | `BOSSES`：6 隻區域大佬，每隻有 `gens`（題目產生器，回傳 `{key,prompt,options,correct,explain}`）同對白 |
+| `src/js/games/bossfight.js` | 區域大佬戰（mode id `boss-<zone>`）；Fake-Bot 仍然係 `games/boss.js` |
+| `src/js/store.js` | 進度：`localStorage` key `wildquest-bio-p6-v1`（星星、最高分、已解鎖卡、錯題；v2 加 `pouch`、`lifetime`、`owned`、`equip`、`decor`、`bosses`、`road`、`power`，`ensure()` 補預設值，舊玩家嘅星星會放入 pouch） |
 | `src/js/art.js` | `art(id)`（Fluent 3D 貼紙圖）、`creatureArt(id)`、手繪 SVG（螳螂、竹節蟲、葉形海龍、鵜鶘、蜂鳥、鋸鰩、蕨、苔蘚、生石花、蕁麻、含羞草、紅樹……） |
 
-小遊戲收到嘅 `api`：`body`／`frame`（HUD：`setHearts`、`setScore`、`setCombo`、`setProgress`）、`intro()`、`ask()`、`toast()`、`wait()`、`loop()`、`learn(id)`（解鎖圖鑑卡）、`miss({key,q,you,ans,why})`（入錯題簿）、`finish({score,correct,total,stars?,won})`、`sfx`、`music()`、`fever()`。
+小遊戲收到嘅 `api`：`body`／`frame`（HUD：`setHearts`、`setScore`、`setCombo`、`setProgress`）、`intro()`、`ask()`、`toast()`、`wait()`、`loop()`、`learn(id)`（解鎖圖鑑卡）、`miss({key,q,you,ans,why})`（入錯題簿）、`finish({score,correct,total,stars?,won,headline?})`、`sfx`、`music()`、`fever()`。
+
+v2 加咗：`hearts(n)`（開局心數，已計 Extra heart）、`loseHeart(cur)`（Lucky shield 擋第一次、剩 1 心開 danger 音樂）、`slow`（Slow-mo 時係 1.25，計時乘佢）、`intensity(n)`（音樂加鼓加快）。小遊戲 export `HEARTS`／`TIMED` 決定介紹畫面顯示邊啲道具。
+
+音樂 API（`audio.js`）：`playMusic(name)` 會 crossfade；歌：`island`、`garden`、`jungle`、`arcade`、`lab`、`shop`、`boss`（Fake-Bot）、`miniboss`（區域大佬）、`victory`；`setDanger(on)`、`setIntensity(n)`、`setFever(on)`。
 
 ### 7.3 加內容
 
@@ -193,12 +201,14 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 - 加 Fact/Fake 句子：`STATEMENTS`，錯嗰個字用 `[ ]` 包住，`fix` 係正確字，`alts` 係兩個錯嘅改法。
 - 加填充：`BLANKS`，句子用 `___` 做空格，`a` 答案，`d` 三個干擾字。
 - 加新圖：將 Fluent Emoji 3D PNG 轉 256px webp 放入 `src/art/`。
+- 加商店貨品：`items.js` 對應陣列加一項（`art` 係 `src/art/` 檔名；服裝 id 本身就係圖名）；島上裝飾要喺 `world.js` 嘅 `DECOR_SPOT` 加位置。
+- 加大佬題目：`bosses.js` 嗰隻大佬嘅 `gens` 加一個 function；smoke test 會自動每款生成 40 次檢查答案喺選項入面。
 
 ### 7.4 Build、測試、上線
 
 ```bash
 node tools/build_wild_quest.mjs          # 生成 games/wild-quest/index.html（第一次會用 npx 下載 esbuild）
-python tools/smoke_wild_quest.py         # 資料檢查 + 12 個小遊戲 + Sort Storm 打通 + 4 個闊度冇橫向 scroll
+python tools/smoke_wild_quest.py         # 資料檢查 + 大佬題目 + 12 個小遊戲 + 6 場大佬戰 + Sort Storm 打通 + 大佬／商店／Star Road + 4 個闊度冇橫向 scroll
 ```
 
 開發時用 local server 開 `src/index.html`（ES modules 唔可以用 file:// 開）；網址加 `?no3d=1` 可以跳過 3D 島（測試用）。

@@ -22,7 +22,7 @@ export default async function play(api) {
     learn: 'This is the same flowchart as your Science Task 1: backbone → warm-blooded → lay eggs / scales → dry skin.',
   });
 
-  let hearts = HEARTS, score = 0, correct = 0, total = 0;
+  let hearts = api.hearts(HEARTS), score = 0, correct = 0, total = 0;
   const revealed = new Set();
   api.frame.setHearts(hearts);
 
@@ -98,7 +98,7 @@ export default async function play(api) {
         node = nxt; moveToken(node);
         await api.wait(480);
       } else {
-        wrongs++; hearts--; api.frame.setHearts(hearts); api.sfx.bad(); shake(nodeEls[node]);
+        wrongs++; hearts = api.loseHeart(hearts); api.sfx.bad(); shake(nodeEls[node]);
         const wrongNext = ans === 'yes' ? fn.yes : fn.no;
         const e = edgeEls[`${node}-${wrongNext}`]; e.classList.add('bad'); setTimeout(() => e.classList.remove('bad'), 1200);
         api.toast(h('span', {}, h('b', {}, `Trapdoor! `), `${c.name}: the answer is ${truth.toUpperCase()}. ${fn.hint}`), { kind: 'bad', ms: 3200 });

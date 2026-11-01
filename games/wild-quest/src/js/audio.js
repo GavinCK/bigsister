@@ -1,7 +1,7 @@
 // =============================================================
 //  Procedural music + SFX (Web Audio). No audio files needed.
 // =============================================================
-let ctx = null, master, musicBus, sfxBus, noiseBuf;
+let ctx = null, master, musicBus, musicFilter, sfxBus, noiseBuf;
 let musicOn = true, sfxOn = true;
 let cur = null;            // currently playing song state
 let tempoMul = 1, fever = false;
@@ -16,6 +16,7 @@ export function initAudio() {
   comp.threshold.value = -14; comp.ratio.value = 4;
   master = ctx.createGain(); master.gain.value = .9;
   musicBus = ctx.createGain(); musicBus.gain.value = musicOn ? .34 : 0;
+  musicFilter = ctx.createBiquadFilter(); musicFilter.type = 'lowpass'; musicFilter.frequency.value = 18000; musicFilter.Q.value = .7; musicFilter.connect(musicBus);
   sfxBus = ctx.createGain(); sfxBus.gain.value = sfxOn ? .75 : 0;
   musicBus.connect(master); sfxBus.connect(master); master.connect(comp); comp.connect(ctx.destination);
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 1.5, ctx.sampleRate);
@@ -95,18 +96,18 @@ const CH = { C: [60, 64, 67], Am: [57, 60, 64], F: [53, 57, 60], G: [55, 59, 62]
 function chillSong({ bpm, key = 0, prog, melody, arpInst = 'marimba', perc = 'shaker' }) {
   return {
     bpm, swing: .12, bars: prog.length,
-    step(bar, s, t, loop, d) {
+    step(bar, s, t, loop, d, out) {
       const ch = CH[prog[bar]].map((n) => n + key);
       const arpIdx = [0, 1, 2, 1, 0, 1, 2, 3];
-      if (s % 2 === 0) { const i = arpIdx[(s / 2) % 8]; const n = i === 3 ? ch[0] + 12 : ch[i]; INST[arpInst](n + 12, t, d, .8, musicBus); }
-      if (s === 0 || s === 8) INST.bass(ch[0] - 24, t, d * 5, 1, musicBus);
-      if (s === 6 || s === 14) INST.bass(ch[2] - 24, t, d * 2, .8, musicBus);
-      if (perc === 'shaker' && s % 2 === 0) INST.shaker(t, s % 4 === 2 ? 1 : .55, musicBus);
-      if (perc === 'bongo') { if ([0, 3, 6, 10, 11, 14].includes(s)) INST.bongo(s % 2 ? 330 : 220, t, .7, musicBus); if (s % 2 === 0) INST.shaker(t, .5, musicBus); }
-      if (s === 0) INST.kick(t, .45, musicBus);
-      if (s === 0) INST.pad(ch[0], t, d * 15, .9, musicBus), INST.pad(ch[1], t, d * 15, .9, musicBus);
+      if (s % 2 === 0) { const i = arpIdx[(s / 2) % 8]; const n = i === 3 ? ch[0] + 12 : ch[i]; INST[arpInst](n + 12, t, d, .8, out); }
+      if (s === 0 || s === 8) INST.bass(ch[0] - 24, t, d * 5, 1, out);
+      if (s === 6 || s === 14) INST.bass(ch[2] - 24, t, d * 2, .8, out);
+      if (perc === 'shaker' && s % 2 === 0) INST.shaker(t, s % 4 === 2 ? 1 : .55, out);
+      if (perc === 'bongo') { if ([0, 3, 6, 10, 11, 14].includes(s)) INST.bongo(s % 2 ? 330 : 220, t, .7, out); if (s % 2 === 0) INST.shaker(t, .5, out); }
+      if (s === 0) INST.kick(t, .45, out);
+      if (s === 0) INST.pad(ch[0], t, d * 15, .9, out), INST.pad(ch[1], t, d * 15, .9, out);
       if (melody && (loop % 4 === 1 || loop % 4 === 2)) {
-        for (const [st, n, len] of melody) if (st === bar * 16 + s) INST.flute(n + key, t, len * d, 1, musicBus);
+        for (const [st, n, len] of melody) if (st === bar * 16 + s) INST.flute(n + key, t, len * d, 1, out);
       }
     },
   };
@@ -127,72 +128,137 @@ const SONGS = {
   }),
   arcade: {
     bpm: 128, swing: 0, bars: 4,
-    step(bar, s, t, loop, d) {
+    step(bar, s, t, loop, d, out) {
       const prog = ['Dm', 'Bb', 'F', 'C']; const ch = CH[prog[bar]];
       const root = prog[bar] === 'F' ? 53 : prog[bar] === 'Bb' ? 58 : ch[0];
-      if (s % 4 === 0) INST.kick(t, fever ? 1 : .85, musicBus);
-      if (s === 4 || s === 12) INST.clap(t, .9, musicBus);
-      INST.hat(t, s % 2 ? .9 : .4, musicBus);
-      if (s % 2 === 0) INST.bass((s % 4 === 0 ? root - 24 : root - 12), t, d * 1.6, .9, musicBus);
-      if ([2, 6, 10, 14].includes(s)) ch.forEach((n) => INST.stab(n + 12, t, d, 1, musicBus));
+      if (s % 4 === 0) INST.kick(t, fever ? 1 : .85, out);
+      if (s === 4 || s === 12) INST.clap(t, .9, out);
+      INST.hat(t, s % 2 ? .9 : .4, out);
+      if (s % 2 === 0) INST.bass((s % 4 === 0 ? root - 24 : root - 12), t, d * 1.6, .9, out);
+      if ([2, 6, 10, 14].includes(s)) ch.forEach((n) => INST.stab(n + 12, t, d, 1, out));
       const A = [[0, 74, 2], [2, 77, 2], [4, 76, 1], [5, 74, 1], [6, 72, 2], [8, 74, 4], [12, 69, 2], [14, 72, 2]];
       const B = [[0, 74, 2], [2, 77, 2], [4, 79, 2], [6, 81, 2], [8, 79, 2], [10, 77, 2], [12, 76, 4]];
       const C = [[0, 74, 2], [2, 77, 2], [4, 79, 2], [6, 77, 2], [8, 76, 2], [10, 74, 2], [12, 72, 4]];
       const mel = [A, B, A, C][bar];
-      if (loop % 2 === 1 || fever) for (const [st, n, len] of mel) if (st === s) INST.lead(n, t, len * d, 1, musicBus);
+      if (loop % 2 === 1 || fever) for (const [st, n, len] of mel) if (st === s) INST.lead(n, t, len * d, 1, out);
     },
   },
   lab: {
     bpm: 116, swing: .16, bars: 2,
-    step(bar, s, t, loop, d) {
+    step(bar, s, t, loop, d, out) {
       const ch = bar === 0 ? CH.Dm7 : CH.G7;
       const bl = bar === 0 ? [[0, 38], [3, 50], [6, 45], [8, 48], [10, 50], [13, 45]] : [[0, 43], [3, 55], [6, 50], [8, 53], [10, 55], [13, 50]];
-      for (const [st, n] of bl) if (st === s) INST.sqbass(n, t, d * 2, 1, musicBus);
-      if (s === 0 || s === 10) INST.kick(t, .6, musicBus);
-      if (s === 4 || s === 12) INST.wood(s === 4 ? 1100 : 800, t, 1, musicBus);
-      if (s % 2 === 1) INST.hat(t, .5, musicBus);
-      if (s === 2 || s === 9) ch.slice(1).forEach((n) => INST.stab(n + 12, t, d, .8, musicBus));
+      for (const [st, n] of bl) if (st === s) INST.sqbass(n, t, d * 2, 1, out);
+      if (s === 0 || s === 10) INST.kick(t, .6, out);
+      if (s === 4 || s === 12) INST.wood(s === 4 ? 1100 : 800, t, 1, out);
+      if (s % 2 === 1) INST.hat(t, .5, out);
+      if (s === 2 || s === 9) ch.slice(1).forEach((n) => INST.stab(n + 12, t, d, .8, out));
       const mel = loop % 2 ? [[0, 74], [2, 77], [5, 81], [8, 79], [11, 77], [14, 74]] : [[0, 69], [3, 72], [6, 74], [10, 72], [12, 69]];
-      for (const [st, n] of mel) if (st === s) INST.bloop(n + (bar ? 5 : 0), t, d, .7, musicBus);
+      for (const [st, n] of mel) if (st === s) INST.bloop(n + (bar ? 5 : 0), t, d, .7, out);
     },
   },
   boss: {
     bpm: 150, swing: 0, bars: 4,
-    step(bar, s, t, loop, d) {
+    step(bar, s, t, loop, d, out) {
       const prog = ['Em', 'C', 'D', 'B']; const ch = CH[prog[bar]];
       const root = { Em: 40, C: 36, D: 38, B: 35 }[prog[bar]];
-      INST.sqbass(s % 4 === 2 ? root + 12 : root, t, d, 1.1, musicBus);
-      if ([0, 6, 8, 14].includes(s)) INST.kick(t, 1, musicBus);
-      if (s === 4 || s === 12) INST.snare(t, 1.1, musicBus);
-      if (s % 2 === 0) INST.hat(t, .7, musicBus);
-      if (s === 0 || s === 3 || s === 6) { INST.stab(ch[0], t, d * 2, 1.6, musicBus); INST.stab(ch[0] + 7, t, d * 2, 1.3, musicBus); }
+      INST.sqbass(s % 4 === 2 ? root + 12 : root, t, d, 1.1, out);
+      if ([0, 6, 8, 14].includes(s)) INST.kick(t, 1, out);
+      if (s === 4 || s === 12) INST.snare(t, 1.1, out);
+      if (s % 2 === 0) INST.hat(t, .7, out);
+      if (s === 0 || s === 3 || s === 6) { INST.stab(ch[0], t, d * 2, 1.6, out); INST.stab(ch[0] + 7, t, d * 2, 1.3, out); }
       const mel = [[[0, 76, 4], [4, 79, 2], [6, 78, 2], [8, 76, 4], [12, 71, 4]], [[0, 72, 4], [4, 76, 4], [8, 79, 6], [14, 78, 2]], [[0, 74, 4], [4, 78, 2], [6, 81, 2], [8, 79, 4], [12, 78, 4]], [[0, 75, 6], [6, 78, 2], [8, 83, 8]]][bar];
-      if (loop % 2 === 1) for (const [st, n, len] of mel) if (st === s) INST.lead(n, t, len * d, 1.2, musicBus);
+      if (loop % 2 === 1) for (const [st, n, len] of mel) if (st === s) INST.lead(n, t, len * d, 1.2, out);
+    },
+  },
+  shop: {
+    bpm: 112, swing: .2, bars: 4,
+    step(bar, s, t, loop, d, out) {
+      const prog = ['Cmaj', 'Am7', 'Dm7', 'G7']; const ch = CH[prog[bar]];
+      const walk = [[0, ch[0] - 24], [4, ch[1] - 24], [8, ch[2] - 24], [12, ch[0] - 22]];
+      for (const [st, n] of walk) if (st === s) INST.bass(n, t, d * 3.5, .9, out);
+      if (s === 2 || s === 7 || s === 10 || s === 15) ch.forEach((n) => INST.pluck(n + 12, t, d, .55, out));
+      if (s === 4 || s === 12) INST.wood(1300, t, .7, out);
+      if (s % 2 === 0) INST.shaker(t, .5, out);
+      if (s === 0) INST.kick(t, .35, out);
+      const mel = [[[0, 76], [3, 79], [6, 81], [10, 79]], [[0, 76], [4, 72], [8, 74]], [[0, 77], [3, 81], [6, 84], [10, 81]], [[0, 79], [4, 77], [8, 74], [12, 71]]][bar];
+      if (loop % 2 === 1) for (const [st, n] of mel) if (st === s) INST.marimba(n, t, d * 2, 1, out);
+    },
+  },
+  miniboss: {
+    bpm: 140, swing: 0, bars: 4,
+    step(bar, s, t, loop, d, out) {
+      const prog = ['Am', 'F', 'G', 'E']; const ch = CH[prog[bar]];
+      const root = { Am: 45, F: 41, G: 43, E: 40 }[prog[bar]];
+      if (s % 2 === 0) INST.sqbass(s % 4 === 2 ? root + 12 : root, t, d * 1.5, 1, out);
+      if (s % 4 === 0) INST.kick(t, .9, out);
+      if (s === 4 || s === 12) INST.snare(t, 1, out);
+      if (s % 2 === 1) INST.hat(t, .6, out);
+      if (s === 0 || s === 6) ch.forEach((n) => INST.stab(n, t, d * 2, 1.4, out));
+      if (bar === 3 && s >= 12) INST.bongo(140 - (s - 12) * 15, t, 1, out);
+      const mel = [[[0, 81, 3], [4, 84, 2], [6, 83, 2], [8, 81, 4], [12, 76, 4]], [[0, 77, 4], [4, 81, 4], [8, 84, 8]], [[0, 79, 3], [4, 83, 2], [6, 86, 2], [8, 84, 4], [12, 83, 4]], [[0, 80, 6], [6, 83, 2], [8, 88, 8]]][bar];
+      if (loop % 2 === 1) for (const [st, n, len] of mel) if (st === s) INST.lead(n - 12, t, len * d, 1.1, out);
+    },
+  },
+  victory: {
+    bpm: 124, swing: .1, bars: 2,
+    step(bar, s, t, loop, d, out) {
+      const ch = bar === 0 ? CH.C : CH.G;
+      if (s % 2 === 0) { const i = [0, 1, 2, 1][(s / 2) % 4]; INST.marimba(ch[i] + 12, t, d, .8, out); }
+      if (s === 0 || s === 8) INST.bass(ch[0] - 24, t, d * 6, 1, out);
+      if (s % 4 === 0) INST.kick(t, .5, out);
+      if (s === 4 || s === 12) INST.clap(t, .6, out);
+      const mel = bar === 0 ? [[0, 79, 2], [2, 84, 2], [4, 88, 4], [8, 86, 2], [10, 84, 2], [12, 86, 4]] : [[0, 83, 2], [2, 86, 2], [4, 91, 4], [8, 88, 4], [12, 84, 4]];
+      for (const [st, n, len] of mel) if (st === s) INST.flute(n - 12, t, len * d, 1, out);
     },
   },
 };
 
 let schedTimer = null;
-export function playMusic(name) {
+let intensity = 0, danger = false;
+export function playMusic(name, { fade = .7 } = {}) {
   if (!ctx) return;
   if (cur && cur.name === name) return;
-  stopMusic();
   const song = SONGS[name]; if (!song) return;
-  cur = { name, song, bar: 0, step: 0, loop: 0, next: ctx.currentTime + .08 };
-  schedTimer = setInterval(scheduler, 25);
+  const t0 = ctx.currentTime;
+  if (cur) {
+    const old = cur.bus;
+    old.gain.cancelScheduledValues(t0); old.gain.setValueAtTime(Math.max(old.gain.value, .0001), t0);
+    old.gain.exponentialRampToValueAtTime(.0001, t0 + fade);
+    setTimeout(() => { try { old.disconnect(); } catch (e) { /* gone */ } }, fade * 1000 + 500);
+  }
+  const bus = ctx.createGain(); bus.gain.setValueAtTime(.0001, t0); bus.gain.exponentialRampToValueAtTime(1, t0 + fade); bus.connect(musicFilter);
+  cur = { name, song, bar: 0, step: 0, loop: 0, next: t0 + .05, bus };
+  intensity = 0; fever = false; tempoMul = 1;
+  if (!schedTimer) schedTimer = setInterval(scheduler, 25);
 }
-export function stopMusic() { if (schedTimer) clearInterval(schedTimer); schedTimer = null; cur = null; fever = false; tempoMul = 1; }
-export function setFever(on) { fever = on; tempoMul = on ? 1.1 : 1; }
+export function stopMusic() { if (schedTimer) clearInterval(schedTimer); schedTimer = null; if (cur) { try { cur.bus.disconnect(); } catch (e) { /* gone */ } } cur = null; fever = false; tempoMul = 1; setDanger(false); }
+export function setFever(on) { fever = on; tempoMul = on ? 1.1 : intensity ? 1.07 : 1; }
+// 0 = normal, 1 = intense (enraged boss, time running out): faster + extra drums
+export function setIntensity(n) { intensity = n; tempoMul = fever ? 1.1 : n ? 1.07 : 1; }
+// danger = one heart left: music goes muffled and a heartbeat joins in
+export function setDanger(on) {
+  danger = on; if (!ctx) return;
+  musicFilter.frequency.cancelScheduledValues(ctx.currentTime);
+  musicFilter.frequency.setTargetAtTime(on ? 1300 : 18000, ctx.currentTime, .25);
+}
 function scheduler() {
   if (!cur || !ctx) return;
   const { song } = cur;
   const d = 60 / (song.bpm * tempoMul) / 4;
   while (cur.next < ctx.currentTime + .14) {
     const sw = cur.step % 2 ? d * (song.swing || 0) : 0;
-    try { song.step(cur.bar, cur.step, cur.next + sw, cur.loop, d); } catch (e) { /* keep going */ }
+    const t = cur.next + sw;
+    try { song.step(cur.bar, cur.step, t, cur.loop, d, cur.bus); } catch (e) { /* keep going */ }
+    if (intensity >= 1) { INST.hat(t, cur.step % 2 ? .45 : .8, cur.bus); if (cur.step % 4 === 2) INST.kick(t, .3, cur.bus); }
+    if (danger && cur.step % 8 === 0) { heartbeat(cur.next); }
     cur.next += d; cur.step++;
     if (cur.step >= 16) { cur.step = 0; cur.bar++; if (cur.bar >= song.bars) { cur.bar = 0; cur.loop++; } }
   }
+}
+function heartbeat(t) {
+  osc('sine', 70, t, .08, { vol: .55, a: .004, r: .12, slideTo: 42, slideT: .1, dest: musicBus });
+  osc('sine', 62, t + .18, .07, { vol: .4, a: .004, r: .12, slideTo: 40, slideT: .1, dest: musicBus });
 }
 
 // ---------------- SFX ----------------
@@ -232,6 +298,13 @@ export const sfx = {
     INST.kick(t + .5, .6, sfxBus);
   },
   lose() { if (!ctx) return; const t = now(); [67, 66, 65, 64].forEach((m, i) => osc('triangle', mtof(m), t + i * .22, .18, { vol: .15, r: .2, vib: i === 3 ? 8 : 0 })); },
+  enrage() { if (!ctx) return; const t = now(); [40, 47, 52].forEach((m) => osc('sawtooth', mtof(m), t, .6, { vol: .07, a: .02, r: .5, cutoff: 1400 })); noise(t, .8, { vol: .2, type: 'highpass', freq: 3000, sweepTo: 9000, a: .3, r: .3 }); INST.kick(t, 1, sfxBus); },
+  crit() { if (!ctx) return; const t = now(); [84, 91, 96].forEach((m, i) => osc('square', mtof(m), t + i * .04, .05, { vol: .06, r: .1, cutoff: 5000 })); noise(t, .12, { vol: .2, freq: 4000, q: 2 }); },
+  dodge() { if (!ctx) return; noise(now(), .2, { vol: .2, freq: 1500, sweepTo: 6000, q: 3, r: .05 }); },
+  heal() { if (!ctx) return; osc('sine', 300, now(), .3, { vol: .15, slideTo: 600, r: .1, vib: 20 }); },
+  buy() { if (!ctx) return; const t = now(); osc('square', mtof(88), t, .05, { vol: .06, r: .05 }); osc('square', mtof(93), t + .06, .1, { vol: .06, r: .2 }); [76, 81, 84].forEach((m, i) => INST.marimba(m, t + .12 + i * .06, .1, 1, sfxBus)); },
+  equip() { if (!ctx) return; osc('triangle', 600, now(), .08, { vol: .15, slideTo: 1200, r: .1 }); },
+  chest() { if (!ctx) return; const t = now(); [72, 76, 79, 84, 88, 91, 96].forEach((m, i) => osc('triangle', mtof(m), t + i * .06, .05, { vol: .12, r: .3 })); noise(t + .4, .5, { vol: .12, type: 'highpass', freq: 6000, r: .5 }); },
   fanfare() {
     if (!ctx) return; const t = now();
     [[67, 0, .12], [67, .14, .12], [67, .28, .12], [72, .42, .5], [76, .95, .15], [79, 1.12, .7]].forEach(([m, dt, len]) => { osc('square', mtof(m), t + dt, len, { vol: .07, cutoff: 3500, r: .1 }); osc('triangle', mtof(m - 12), t + dt, len, { vol: .1, r: .1 }); });

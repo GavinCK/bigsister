@@ -4,6 +4,7 @@ import { h, shuffle, pick, sample } from '../ui.js';
 import { art, creatureArt } from '../art.js';
 import { burstAt, floatAt, shake } from '../fx.js';
 
+export const TIMED = true;
 export const HEARTS = 3;
 
 export default async function play(api) {
@@ -13,7 +14,7 @@ export default async function play(api) {
     how: [['goat', 'A hungry animal walks towards a plant'], ['joystick', 'Tap THAT plant\'s defence card'], ['heart', 'Too slow or wrong = a bite!']],
     learn: 'Plants cannot move, but some protect themselves: poison, looking like stones, spikes, closing leaves.',
   });
-  let hearts = HEARTS, score = 0, correct = 0, total = 0;
+  let hearts = api.hearts(HEARTS), score = 0, correct = 0, total = 0;
   api.frame.setHearts(hearts);
 
   const field = h('div', { class: 'gg-field' });
@@ -49,7 +50,7 @@ export default async function play(api) {
     const startX = laneR.width + 20, endX = bedR.right - laneR.left + 4;
     const y = bedR.top - laneR.top + bedR.height * .25;
     critter.style.top = `${y}px`;
-    const dur = Math.max(3.2, 6.2 - r * .3);
+    const dur = Math.max(3.2, 6.2 - r * .3) * api.slow;
     const t0 = performance.now();
     let answered = null;
     const anim = critter.animate([{ transform: `translateX(${startX}px)` }, { transform: `translateX(${endX}px)` }], { duration: dur * 1000, fill: 'forwards', easing: 'linear' });
@@ -84,7 +85,7 @@ export default async function play(api) {
       critter.animate([{ transform: getComputedStyle(critter).transform }, { transform: `translateX(${startX}px) scaleX(-1)` }], { duration: 700, fill: 'forwards', easing: 'ease-in' });
       await api.wait(800);
     } else {
-      hearts--; api.frame.setHearts(hearts);
+      hearts = api.loseHeart(hearts);
       if (cardEl) { cardEl.classList.add('wrong'); setTimeout(() => cardEl.classList.remove('wrong'), 700); }
       const rightCard = cardEls.find((c) => c.dataset.def === target.defense); rightCard.classList.add('hint');
       anim.play(); await new Promise((r2) => { if (anim.playState === 'finished') r2(); else anim.onfinish = r2; });
