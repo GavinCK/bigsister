@@ -1,6 +1,6 @@
 # 交接文件：BIGSISTER 學習遊戲室
 
-最後更新：2026-11-01
+最後更新：2026-11-11
 
 呢份文件寫俾之後接手嘅 AI 或者工程師。讀完應該知道遊戲點樣砌、資料放喺邊、點樣加新內容、點樣測試同上線。
 
@@ -143,7 +143,7 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 | Claude Artifact 連結 | 後備 | 由 Claude 重新 publish |
 
 注意：
-- `bigsister` 已經轉做 public，Pages 由 `main` 根目錄出：大廳 `/bigsister/`、成語大冒險 `/bigsister/games/chengyu-adventure/`、Wild Quest `/bigsister/games/wild-quest/`。舊網址 `chengyu-adventure` repo 仍然有效（同網域，`localStorage` 進度共用）。
+- `bigsister` 已經轉做 public，Pages 由 `main` 根目錄出：大廳 `/bigsister/`、成語大冒險 `/bigsister/games/chengyu-adventure/`、Joycelyn's Islands `/bigsister/games/joycelyn-world/`（舊 Wild Quest 網址會轉過去）。舊網址 `chengyu-adventure` repo 仍然有效（同網域，`localStorage` 進度共用）。
 - 因為 repo 係 public：小朋友只用名（例如 Joycelyn），唔好 commit 姓氏、學校名或者原本嘅工作紙 PDF。
 - 同一個網域（`gavinck.github.io`）下面嘅遊戲共用 `localStorage`；唔同遊戲一定要用唔同 key。
 - iPad 唔可以喺「檔案」App 開 HTML，一定要經網址用 Safari 開，再「加入主畫面」。
@@ -160,59 +160,58 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 
 ---
 
-## 7. Joycelyn Biodiversity Island（Wild Quest，小六常識 Unit 1 Biodiversity）
+## 7. Joycelyn's Islands（學習群島，小六：常識＋數學＋中文）
 
-個島用小朋友個名命名（Gavin 2026-11-01 要求）。程式入面仍然叫 Wild Quest，資料夾 `games/wild-quest`。
+2026-11-11 Gavin 要求將 Wild Quest、數學工作坊同成語大冒險合併成一個網頁，並且重新設計架構方便日後加島。資料夾 `games/joycelyn-world`（舊 `games/wild-quest` 只剩一個轉址頁）。
 
-詳細玩法、內容來源同「待確認」睇 `games/wild-quest/README.md`。
+詳細玩法、每個島嘅內容來源同「待確認」睇 `games/joycelyn-world/README.md`（科學島詳細：`games/joycelyn-world/docs/science-island.md`）。
 
-### 7.1 同成語大冒險唔同嘅地方
+背景：Joycelyn 準備升中，數學係**面試即場口問心算**（Gavin 提供嘅 8 張「Mental Practice P6」：P1–5 最重要，P6–8 深啲遲啲先練）。學校英文授課，所以**數學島全部英文**（Gavin 指定，連鼓勵說話同家長頁數學嗰節都係英文）。常識亦係英文；中文島保持中文。
 
-- **原始碼係模組化**（`games/wild-quest/src/`，ES modules），因為有 3D 島（three.js）同 198 張圖。上線嘅 `games/wild-quest/index.html` 係 build 出嚟嘅單一檔案（約 2 MB），所有 JS、CSS、three.js、圖都 inline，冇網都玩得（Google Fonts 除外）。**唔好直接改 build 出嚟嗰個檔。**
-- 常識科用英文授課，所以介面同題目係英文；圖鑑卡附中文名。
-- 音樂同音效全部用 Web Audio 即時合成（`src/js/audio.js`），冇聲音檔。
+### 7.1 重點
+
+- **原始碼係模組化**（`src/`，ES modules），build 出嚟嘅 `index.html` 係單一檔案（約 2.8 MB；JS、CSS、three.js、248 張圖全部 inline）。**唔好直接改 build 出嚟嗰個檔。**
+- 一片海、每科一個島（pack）。Shell 同共用獎勵唔理島入面係咩。
+- 進度仍然用 Wild Quest 嘅 key `wildquest-bio-p6-v1`（**唔好改**），新欄位：`name`、`days`（streak）、`packs`（每個島自己嘅資料，用 `store.pack(id)` 攞）。舊玩家打開會自動保留晒星星、卡、商店貨品。
+- 音樂同音效全部用 Web Audio 即時合成（`core/audio.js`），冇聲音檔。
 
 ### 7.2 架構
 
-| 檔案 | 內容 |
+| 位置 | 內容 |
 |---|---|
-| `src/js/data.js` | **全部學習內容**：`GROUPS`、`CREATURES`、`PLANTS`、`BIOMES`、每個小遊戲嘅資料表（`SORT_WAVES`、`LAB_*`、`DETECTIVE_CASES`、`FLOW_NODES`、`PLANT_*`、`AIRLIFT_*`、`SURVIVAL`、`HIDE_SCENES`、`PANIC_ROUNDS`、`FEEDERS`、`STATEMENTS`、`BLANKS`、`WHO_RIGHT`、`COVERAGE`） |
-| `src/js/main.js` | `ZONES`（7 區、12 個 mode）、標題畫面、島嶼大廳、`launch()` 遊戲啟動、`finish()` 結算、`MODS` 靜態模組表 |
-| `src/js/world.js` | three.js 低多邊形島、7 個區域標籤、動物 billboard、鏡頭飛行 |
-| `src/js/games/*.js` | 每個小遊戲一個檔，`export default async function play(api)` |
-| `src/js/games/faller.js` | 共用「跌落嚟分類」引擎（Sort Storm、Seed Sorter、Animal Airlift） |
-| `src/js/guide.js` | Field Guide、Oops Book、For grown-ups 頁 |
-| `src/js/items.js` | 商店貨品（`COSTUMES`、`PETS`、`DECOR`、`POWERUPS`）、`BOSS_PRIZES`、`ROAD`（Star Road 里程碑）。`only: 'boss' / 'road'` 即係買唔到 |
-| `src/js/economy.js` | `openShop`、`openRoad`、`openGift`、`grant`（已擁有就退星）、`powerTray`（開波前揀道具）、`avatarEl` |
-| `src/js/bosses.js` | `BOSSES`：6 隻區域大佬，每隻有 `gens`（題目產生器，回傳 `{key,prompt,options,correct,explain}`）同對白 |
-| `src/js/games/bossfight.js` | 區域大佬戰（mode id `boss-<zone>`）；Fake-Bot 仍然係 `games/boss.js` |
-| `src/js/store.js` | 進度：`localStorage` key `wildquest-bio-p6-v1`（星星、最高分、已解鎖卡、錯題；v2 加 `pouch`、`lifetime`、`owned`、`equip`、`decor`、`bosses`、`road`、`power`，`ensure()` 補預設值，舊玩家嘅星星會放入 pouch） |
-| `src/js/art.js` | `art(id)`（Fluent 3D 貼紙圖）、`creatureArt(id)`、手繪 SVG（螳螂、竹節蟲、葉形海龍、鵜鶘、蜂鳥、鋸鰩、蕨、苔蘚、生石花、蕁麻、含羞草、紅樹……） |
+| `src/js/main.js` | Shell：標題、海圖（全部島）、島嶼 HUD（zone chips、上面一排按鈕）、zone card、`launch()`。`PACKS = [science, maths, chinese]` |
+| `src/js/world/engine.js` | three.js 群島引擎：`createWorld(canvas)` → `addIsland(def)`、`addZone`、`setDecor`、`setAvatar`、`setBoss`、`showMap()`、`overview(id)`、`focus(id, zone)`。每個島係一個 `THREE.Group`（本地座標），用 `kit`（`terrain`、`palm`、`rock`、`critter`、`sign`、`clouds`……）砌 |
+| `src/js/core/store.js` | 進度（見上）＋ `pack()`、`markDay()`、`streak()`、`mistakesFor(pack)` |
+| `src/js/core/runner.js` | 遊戲框同 `api`：原本 Wild Quest 小遊戲嘅全部 api，加 `complete()`（只記錄＋出星，俾有自己結果畫面嘅島用，例如數學）、`exit()`、`relaunch()`、`openGift()`、`openRoad()`、`pack`、`opts` |
+| `src/js/core/economy.js`、`items.js` | Star Shop、Star Road、禮物、道具；`BOSS_PRIZES`（所有島嘅大佬獎品）；裝飾有 `island` 欄 |
+| `src/js/core/books.js` | 多島 Oops Book（分頁、HTML 錯題、每個島可以加 header／action）、家長頁（每個島一節） |
+| `src/js/core/art.js` | `art(id)`、`registerCreatures()`（島自己登記卡片資料） |
+| `src/js/islands/science/` | 原本 Wild Quest 全部內容（`data.js`、`bosses.js`、`games/*.js`、Field Guide）；`island.js` 係原本嘅 3D 島 |
+| `src/js/islands/maths/` | `mathlib.js`（`R` 有理數運算、19 個題種、89 個題目產生器、`checkAnswer`）、`engine.js`（所有數學畫面：Practice／Test／Zone Test／Interview／Fix，用 Shadow DOM 隔離 CSS）、`data.js`（區域、`store.pack('maths')`）、`island.js`（算盤、批、天秤、雪山、面試廳） |
+| `src/js/islands/chinese/` | `pack.js`：iframe 開 `../chengyu-adventure/index.html` 再 call `go()`；星星橋讀 `chengyuAdventure_v1`（只讀），新星入星星袋 |
 
-小遊戲收到嘅 `api`：`body`／`frame`（HUD：`setHearts`、`setScore`、`setCombo`、`setProgress`）、`intro()`、`ask()`、`toast()`、`wait()`、`loop()`、`learn(id)`（解鎖圖鑑卡）、`miss({key,q,you,ans,why})`（入錯題簿）、`finish({score,correct,total,stars?,won,headline?})`、`sfx`、`music()`、`fever()`。
+Pack 介面、mode id 規則同「加一個新島」步驟寫晒喺 `games/joycelyn-world/README.md`「架構」一節。重點：
 
-v2 加咗：`hearts(n)`（開局心數，已計 Extra heart）、`loseHeart(cur)`（Lucky shield 擋第一次、剩 1 心開 danger 音樂）、`slow`（Slow-mo 時係 1.25，計時乘佢）、`intensity(n)`（音樂加鼓加快）。小遊戲 export `HEARTS`／`TIMED` 決定介紹畫面顯示邊啲道具。
-
-音樂 API（`audio.js`）：`playMusic(name)` 會 crossfade；歌：`island`、`garden`、`jungle`、`arcade`、`lab`、`shop`、`boss`（Fake-Bot）、`miniboss`（區域大佬）、`victory`；`setDanger(on)`、`setIntensity(n)`、`setFever(on)`。
+- Mode id 全局唯一：科學用原本 id；數學 `m-<topic>`（Practice）、`m-<topic>-t`（Test）、`mz-<zone>`（Zone Test）、`miv-core`／`miv-full`、`m-fix`；中文 `cn-*`。改咗 id 會清走嗰項星星。
+- 大佬獎品 key：科學係 zone id，數學係 `m-<zone>`。
+- 成語大冒險改嘢時，唔好整爛 `window.go(screen)` 同 `chengyuAdventure_v1` 嘅 `battle`／`c2.st`／`dlc.st`，因為成語島靠佢哋。
 
 ### 7.3 加內容
 
-- 加動物：`CREATURES` 加一項（`art` 用 `src/art/` 入面嘅檔名，或者 `svg:名`；`fx` 可以用 CSS filter 變色）。之後喺對應遊戲資料表引用佢個 id。
-- 加 Fact/Fake 句子：`STATEMENTS`，錯嗰個字用 `[ ]` 包住，`fix` 係正確字，`alts` 係兩個錯嘅改法。
-- 加填充：`BLANKS`，句子用 `___` 做空格，`a` 答案，`d` 三個干擾字。
-- 加新圖：將 Fluent Emoji 3D PNG 轉 256px webp 放入 `src/art/`。
-- 加商店貨品：`items.js` 對應陣列加一項（`art` 係 `src/art/` 檔名；服裝 id 本身就係圖名）；島上裝飾要喺 `world.js` 嘅 `DECOR_SPOT` 加位置。
-- 加大佬題目：`bosses.js` 嗰隻大佬嘅 `gens` 加一個 function；smoke test 會自動每款生成 40 次檢查答案喺選項入面。
+- 科學：同以前一樣，`islands/science/data.js`、`bosses.js`（玩法同內容來源見 `games/joycelyn-world/docs/science-island.md`）。島上裝飾位置喺 `islands/science/island.js`。
+- 數學：喺 `mathlib.js` 個題種嘅 `gens` 加一個 `{k, label, f()}`（`f()` 回傳 `{html, ans, hints, steps}`，`ans` 用 `R()` 分數；`kind` 可以係 `choice`／`order`／`time` 等），smoke test 會自動每個生成 200 次，檢查答案格式同 `checkAnswer` 接受正確答案。新題種要加入 `T_CORE`／`T_PRO` 同 `data.js` 嘅 `MZONES`，再喺 `island.js` 加 Pal 位置。
+- 新科／新島：照 README 步驟開 `islands/<id>/`。
 
 ### 7.4 Build、測試、上線
 
 ```bash
-node tools/build_wild_quest.mjs          # 生成 games/wild-quest/index.html（第一次會用 npx 下載 esbuild）
-python tools/smoke_wild_quest.py         # 資料檢查 + 大佬題目 + 12 個小遊戲 + 6 場大佬戰 + Sort Storm 打通 + 大佬／商店／Star Road + 4 個闊度冇橫向 scroll
+node tools/build_world.mjs            # 生成 games/joycelyn-world/index.html（第一次會用 npx 下載 esbuild）
+python tools/smoke_world.py           # 自己開 local server；三個島全部流程＋舊進度＋舊網址＋3D＋4 個闊度
 ```
 
-開發時用 local server 開 `src/index.html`（ES modules 唔可以用 file:// 開）；網址加 `?no3d=1` 可以跳過 3D 島（測試用）。
+開發時喺 repo 根目錄開 local server，開 `games/joycelyn-world/src/index.html`（ES modules 唔可以用 file://；成語島嘅 iframe 都要同源）。`?no3d=1` 跳過 3D，`?island=maths` 直接入島。
 
 上線位：
-- 主網址：https://gavinck.github.io/bigsister/games/wild-quest/（push 去 `main` 就自動更新）。
-- 後備：Claude Artifact https://claude.ai/artifact/CQC1SWHwt51jtckznCKQf6（private；Gavin 喺 Share menu 分享先開到）。更新方法：將 build 出嚟嘅 HTML 去掉 `<!DOCTYPE>`／`<html>`／`<head>`／`<body>` 外殼再 publish 去同一條 URL。
+- 主網址：https://gavinck.github.io/bigsister/games/joycelyn-world/（push 去 `main` 就自動更新）。
+- 舊網址 https://gavinck.github.io/bigsister/games/wild-quest/ 轉去 `?island=science`，主畫面 icon 照用得。
+- 舊 Claude Artifact（https://claude.ai/artifact/CQC1SWHwt51jtckznCKQf6）仍然係 Wild Quest 舊版，冇更新。

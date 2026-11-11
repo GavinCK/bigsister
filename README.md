@@ -14,12 +14,12 @@
 | 遊戲 | 資料夾 | 對象 | 內容 | 狀態 |
 |---|---|---|---|---|
 | 🐼 成語大冒險 | [`games/chengyu-adventure`](games/chengyu-adventure/) | 小六 | 成語、詞語、量詞、擬聲詞、複句、關聯詞、同音形近字、修辭 | 使用中 |
-| 🐸 Joycelyn Biodiversity Island（Wild Quest） | [`games/wild-quest`](games/wild-quest/) | 小六 | 常識 Unit 1 Biodiversity：動物分類、植物與環境、動物與環境（英文） | 新 |
+| 🏝️ Joycelyn's Islands（學習群島） | [`games/joycelyn-world`](games/joycelyn-world/) | 小六 | 一個網頁三個島：Biodiversity Island（常識 Unit 1，英文）、Maths Island（升中面試心算，全英文）、成語島（開成語大冒險）；星星、商店、錯題簿共用 | 新 |
 
 上線網址（呢個 repo 嘅 GitHub Pages）：
 - 遊戲大廳：https://gavinck.github.io/bigsister/
 - 成語大冒險：https://gavinck.github.io/bigsister/games/chengyu-adventure/（舊網址 https://gavinck.github.io/chengyu-adventure/ 仍然有效）
-- Joycelyn Biodiversity Island（Wild Quest）：https://gavinck.github.io/bigsister/games/wild-quest/
+- Joycelyn's Islands：https://gavinck.github.io/bigsister/games/joycelyn-world/（`?island=maths`／`science`／`chinese` 直接去某個島；舊 Wild Quest 網址 `games/wild-quest/` 會自動轉過嚟）
 
 ## 結構
 
@@ -30,16 +30,18 @@ bigsister/
 │   ├── chengyu-adventure/
 │   │   ├── index.html          成語大冒險（單一檔案）
 │   │   └── README.md           範圍、玩法、更新紀錄
+│   ├── joycelyn-world/
+│   │   ├── index.html          Joycelyn's Islands（build 出嚟嘅單一檔案）
+│   │   ├── src/                原始碼（core／world／islands，改呢度再 build）
+│   │   └── README.md           群島架構、每個島嘅內容、點樣加新島
 │   └── wild-quest/
-│       ├── index.html          Joycelyn Biodiversity Island（build 出嚟嘅單一檔案）
-│       ├── src/                原始碼（改呢度，再 build）
-│       └── README.md
+│       └── index.html          舊網址：轉去 joycelyn-world 嘅 Biodiversity Island
 ├── docs/
 │   └── HANDOFF.md              交接文件：架構、資料格式、點樣加內容、部署
 ├── tools/
 │   ├── smoke_test.py           成語大冒險自動打通測試（Playwright）
-│   ├── build_wild_quest.mjs    將 wild-quest/src build 成單一 HTML
-│   └── smoke_wild_quest.py     Wild Quest 自動測試（Playwright）
+│   ├── build_world.mjs         將 joycelyn-world/src build 成單一 HTML
+│   └── smoke_world.py          群島自動測試（三個島＋共用獎勵＋3D，Playwright）
 └── CLAUDE.md                   俾之後接手嘅 AI 睇嘅工作守則
 ```
 
