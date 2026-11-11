@@ -104,7 +104,7 @@ export function openShop(parent, ctx, startTab = 'costume') {
     else if (equipped) btn = h('button', { class: 'btn small cool', onclick: () => { if (type === 'pet') { store.equip('pet', null); ctx.sfx.tap(); refresh(); render(); ctx.onChange && ctx.onChange(); } } }, type === 'pet' ? 'With you ✓' : 'Wearing ✓');
     else if (owned && type !== 'decor') btn = h('button', { class: 'btn small go', onclick: () => { store.equip(type, it.id); ctx.sfx.equip(); refresh(); render(); ctx.onChange && ctx.onChange(); } }, type === 'pet' ? 'Take along' : 'Wear');
     else if (owned) btn = h('span', { class: 'owned' }, `On ${ISLAND_NAME[it.island || 'science']} ✓`);
-    else if (it.only === 'boss') btn = h('span', { class: 'lockline' }, art('crown', { size: 22 }), `Beat ${it.from}`);
+    else if (it.only === 'boss') btn = h('span', { class: 'lockline' }, art('crown', { size: 22 }), `${/interview/.test(it.from) ? '10/12 in the' : 'Beat'} ${it.from}`);
     else if (it.only === 'road') btn = h('span', { class: 'lockline' }, art('gift', { size: 22 }), 'Star Road gift');
     else if (needsCard) btn = h('span', { class: 'lockline' }, art('lock', { size: 22 }), `Find the ${(creatureInfo(it.card)?.name || it.card).toLowerCase()} card first`);
     else btn = h('button', { class: 'btn small', disabled: store.pouch() < it.price ? true : null, onclick: () => buy(it, type) }, `${it.price} ★`);

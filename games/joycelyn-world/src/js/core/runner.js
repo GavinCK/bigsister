@@ -63,6 +63,7 @@ export function createRunner(env) {
       complete: (res) => complete(res),
       exit: () => quit(),
       relaunch: (o) => { api.alive = false; calm(); frame.root.remove(); busy = false; launch(m.id, o || opts); },
+      switchTo: (id, o) => { api.alive = false; calm(); frame.root.remove(); busy = false; launch(id, o || {}); },
       openGift: (item, o = {}) => openGift(frame.root, { item }, env.ectx(), { title: 'Boss prize!', ...o }),
       openRoad: () => { quit(); openRoad(overlay, env.ectx()); },
     });

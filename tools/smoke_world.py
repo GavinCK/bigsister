@@ -9,9 +9,10 @@ Usage:
 It serves the repo on a local web server (so 成語大冒險 can open inside the page) and checks:
 1. Biodiversity Island (the original Wild Quest tests): data, 12 mini-games, Sort Storm to the end, 6 zone bosses,
    Kraken Kaptain win + prize, Star Shop, Star Road.
-2. Maths Island: 89 question generators; Practice for all 19 topics typed on the on-screen keypad (3 stars);
-   wrong answers → method + retry + Oops Book; all 19 Tests (100%, Maths Pal); 6 Zone Tests (boss win + prize);
-   Core / Full mock interviews; time-up; Pass; spoken (grown-up marks) mode; Fix my mistakes; scratch paper.
+2. Maths Island (one zone per page of the 8 Mental papers): 96 question generators × 200; Practice paper for all
+   8 pages typed on the on-screen keypad (12 questions in paper order, 3 stars); wrong answers → method + one more
+   question + Oops Book; Drill; Interview for all 8 pages (12 / 12, page pet on the first 10+); no double prize;
+   time-up; Pass; spoken (grown-up marks) mode; Fix my mistakes; scratch paper; Tip; old saves migrate.
 3. 成語島: stars from 成語大冒險 are paid into the pouch; the game opens inside the page at the right chapter.
 4. The sea map, island cards and zone chips; old saved progress still loads; the old Wild Quest URL redirects.
 5. 3D world (WebGL via SwiftShader) runs without errors; no sideways scrolling at 1180 / 1024 / 768 / 390 px.
@@ -241,12 +242,15 @@ def maths_generators(pg):
     r = pg.evaluate("""() => { const M = window.__world.PACKS.find(p => p.id === 'maths').debug, bad = []; let n = 0;
       for (const id of Object.keys(M.GEN)) for (let i = 0; i < 200; i++) {
         let q; try { q = M.makeQ(id); } catch (e) { bad.push(id + ' throws ' + e.message); break; }
-        n++; const txt = JSON.stringify([q.html, q.steps, q.hints]);
-        if (/NaN|undefined|Infinity|\\[object/.test(txt)) { bad.push(id + ' bad text'); break; }
+        n++; const txt = JSON.stringify([q.html, q.steps, q.hints, q.choices || []]);
+        if (/NaN|undefined|Infinity|\\[object|null/.test(txt)) { bad.push(id + ' bad text'); break; }
         if (q.kind === 'choice' && (q.correct < 0 || new Set(q.choices).size !== q.choices.length)) { bad.push(id + ' choices'); break; }
         if (!M.checkAnswer(q, M.ansEntry(q)).ok) { bad.push(id + ' answer does not check'); break; }
-      } return { bad, n, gens: Object.keys(M.GEN).length }; }""")
-    check(f"Maths generators ({r['gens']} generators, {r['n']} questions)", not r["bad"], str(r["bad"][:5]))
+      }
+      const pages = M.PAPERS.map(p => p.slots.map(s => s.lab).join(',')), want = 'Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8,Q9a,Q9b,Q10a,Q10b';
+      return { bad, n, gens: Object.keys(M.GEN).length, pages: M.PAPERS.length, layout: pages.every(x => x === want) }; }""")
+    check(f"Maths: {r['pages']} pages × 12 questions (Q1–Q8, 9a/b, 10a/b) = {r['gens']} generators, {r['n']} questions all mark correctly",
+          not r["bad"] and r["pages"] == 8 and r["gens"] == 96 and r["layout"], str(r["bad"][:5]))
 
 def maths_enter(pg):
     """Type the correct answer through the real maths UI: keypad, fraction boxes, choices, order chips, a.m./p.m."""
@@ -270,16 +274,14 @@ def maths_enter(pg):
         pg.locator(f".abox[data-f='{f}']").click()
         for c in e[f]: mact(pg, "key", c)
 
-def maths_practice(pg, tid, wrong_first=False):
-    pg.evaluate("(t) => __world.launch('m-' + t)", tid); pg.wait_for_timeout(500)
-    mact(pg, "practice")
+def maths_run_practice(pg, wrong_first=False, hint_at=1):
     for step in range(40):
         if mscreen(pg) != "play": break
         if not pg.evaluate("() => __mw.cur().done"):
             if wrong_first and step == 0:
                 for _ in range(2): pg.evaluate("() => __mw.wrong()"); mact(pg, "check")
             else:
-                if step == 1: mact(pg, "hint")
+                if step == hint_at: mact(pg, "hint")
                 maths_enter(pg); mact(pg, "check")
         mact(pg, "next")
     return pg.evaluate("() => !!(__mw.root.querySelector('.review'))")
@@ -287,77 +289,82 @@ def maths_practice(pg, tid, wrong_first=False):
 def maths_all(br):
     pg = new_page(br)
     maths_generators(pg)
-    topics = pg.evaluate("() => window.__world.PACKS.find(p => p.id === 'maths').debug.TOPICS.map(t => t.id)")
+    # every page: page screen (12 question types) → Practice paper typed on the keypad → 3 stars
     bad = []
-    for t in topics:
+    for n in range(1, 9):
         p0 = pg.evaluate("() => __world.store.pouch()")
-        if not maths_practice(pg, t): bad.append(t + " no result")
-        elif pg.evaluate(f"() => __world.store.stars('m-{t}')") != 3: bad.append(t + " stars")
-        elif pg.evaluate("() => __world.store.pouch()") < p0 + 3: bad.append(t + " pouch")
+        pg.evaluate("(n) => __world.launch('mp-' + n)", n); pg.wait_for_timeout(450)
+        rows = pg.evaluate("() => __mw.root.querySelectorAll('.slots li').length")
+        if rows != 12: bad.append(f"p{n} rows {rows}")
+        if n == 3: shot(pg, "maths-page")
+        mact(pg, "practice"); pg.wait_for_timeout(100)
+        labs = pg.evaluate("() => __mw.SES.items.map(x => x.lab).join(',')")
+        if labs != "Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8,Q9a,Q9b,Q10a,Q10b": bad.append(f"p{n} order {labs}")
+        if not maths_run_practice(pg): bad.append(f"p{n} no result")
+        elif pg.evaluate(f"() => __world.store.stars('mp-{n}')") != 3: bad.append(f"p{n} stars")
+        elif pg.evaluate("() => __world.store.pouch()") < p0 + 3: bad.append(f"p{n} pouch")
         mact(pg, "exit"); pg.wait_for_timeout(150)
     shot(pg, "maths-island-after-practice")
-    check("Maths Practice: all 19 topics answered on the keypad → 3 ★ each, paid into the pouch", not bad, str(bad))
+    check("Maths Practice: all 8 pages — 12 questions in paper order, answered on the keypad → 3 ★, paid into the pouch", not bad, str(bad))
     # wrong answers: method shown, a new similar question appended, Oops Book entry
     n0 = pg.evaluate("() => __world.store.mistakesFor('maths').length")
-    ok = maths_practice(pg, "eq", wrong_first=True)
+    pg.evaluate("() => __world.launch('mp-4')"); pg.wait_for_timeout(400); mact(pg, "practice")
+    ok = maths_run_practice(pg, wrong_first=True)
     n_rev = pg.evaluate("() => __mw.root.querySelectorAll('.review > li').length")
-    check("Maths Practice: 2 wrong tries → method, retry question, Oops Book", ok and n_rev == 9 and pg.evaluate("() => __world.store.mistakesFor('maths').length") > n0, f"rev={n_rev}")
-    shot(pg, "maths-practice-result"); mact(pg, "exit")
-    # topic tests → 100%, Maths Pal
+    check("Maths Practice: 2 wrong tries → method, one more question like it, Oops Book", ok and n_rev == 13 and pg.evaluate("() => __world.store.mistakesFor('maths').length") > n0, f"rev={n_rev}")
+    shot(pg, "maths-practice-result")
+    # Practice result → "Try the interview" switches to that page's Interview
+    mact(pg, "interview"); pg.wait_for_timeout(700)
+    check("Practice result → 'Try the interview' opens the Page 4 interview", pg.evaluate("() => !!__mw.root.querySelector('[data-act=startiv]')") and "Page 4" in pg.evaluate("() => __mw.root.querySelector('h2').textContent"))
+    mact(pg, "exit"); pg.wait_for_timeout(150)
+    # Drill one question type
+    pg.evaluate("() => __world.launch('mp-6')"); pg.wait_for_timeout(400)
+    mact(pg, "drill", "p6.q7")
+    gens = pg.evaluate("() => [...new Set(__mw.SES.items.map(x => x.q.gen))].join(',') + '/' + __mw.SES.items.length")
+    maths_run_practice(pg, hint_at=-1)
+    check("Drill: 5 questions of one type (Page 6 Q7) → result, back to the page", gens == "p6.q7/5" and pg.evaluate("() => __world.store.stars('m-drill')") == 3, gens)
+    mact(pg, "page"); pg.wait_for_timeout(200)
+    check("Drill result → Page button shows the page's 12 questions again", pg.evaluate("() => __mw.root.querySelectorAll('.slots li').length") == 12)
+    mact(pg, "exit"); pg.wait_for_timeout(150)
+    # every page: Interview typed → 12 / 12, first win gives the page's pet
     bad = []
-    for t in topics:
-        pg.evaluate("(t) => __world.launch('m-' + t)", t); pg.wait_for_timeout(400)
-        mact(pg, "testintro"); mact(pg, "starttest")
-        for i in range(8):
-            pg.evaluate("() => __mw.solve()")
-            if i < 7: mact(pg, "tnext")
-        mact(pg, "finishtest"); pg.wait_for_timeout(100); close_modals(pg)
-        st = pg.evaluate(f"() => ({{ pb: __world.store.get().packs.maths.topics['{t}'].pb, pal: __world.store.has('pal-{t}'), ts: __world.store.stars('m-{t}-t') }})")
-        if st["pb"] != 100 or not st["pal"] or st["ts"] != 3: bad.append(f"{t} {st}")
-        mact(pg, "exit"); pg.wait_for_timeout(120)
-    check("Maths Tests: all 19 topics → 100%, gold, Maths Pal won", not bad, str(bad[:4]))
-    # zone tests (bosses): open now, win, prize
-    bad = []
-    for z, prize in [("calc", "p-octopus"), ("frac", "p-flamingo"), ("eq", "p-kangaroo"), ("shape", "p-peacock"), ("measure", "p-ladybug"), ("peak", "p-trex")]:
-        pg.evaluate("(z) => __world.openZone('maths', z)", z); pg.wait_for_timeout(300)
-        if "Ready to fight" not in pg.evaluate("() => document.querySelector('.boss-btn')?.innerText || ''"): bad.append(z + " not open")
-        pg.evaluate("() => document.querySelector('.boss-btn').click()"); pg.wait_for_timeout(500)
-        mact(pg, "startzone")
-        for i in range(10):
-            pg.evaluate("() => __mw.solve()")
-            if i < 9: mact(pg, "tnext")
-        mact(pg, "finishtest"); pg.wait_for_timeout(1900)
-        pg.evaluate("() => document.querySelector('.giftbox')?.click()"); pg.wait_for_timeout(700)
-        r = pg.evaluate(f"() => ({{ wins: __world.store.bossWins('m-{z}'), prize: __world.store.owns('{prize}') }})")
-        if r["wins"] != 1 or not r["prize"]: bad.append(f"{z} {r}")
-        pg.evaluate("() => [...document.querySelectorAll('.modal .btn')].find(b => /Great|Take it|Wear/.test(b.textContent))?.click()"); pg.wait_for_timeout(200)
-        mact(pg, "exit"); pg.wait_for_timeout(150)
-    check("Maths Zone Tests: 6 bosses unlock, are beaten, and give their pet", not bad, str(bad))
-    # mock interviews (typed)
-    for kind in ["core", "full"]:
-        pg.evaluate("(k) => __world.launch('miv-' + k)", kind); pg.wait_for_timeout(400)
+    prizes = {1: "p-octopus", 2: "p-flamingo", 3: "p-kangaroo", 4: "p-peacock", 5: "p-ladybug", 6: "p-otter", 7: "p-hedgehog", 8: "p-trex"}
+    for n, prize in prizes.items():
+        pg.evaluate("(n) => __world.launch('mi-' + n)", n); pg.wait_for_timeout(400)
         mact(pg, "startiv", "type")
         for i in range(12): maths_enter(pg); mact(pg, "ivsubmit"); pg.wait_for_timeout(430)
-        pg.wait_for_timeout(300); close_modals(pg)
-        txt = pg.evaluate("() => __mw.root.querySelector('.score')?.textContent || ''")
-        check(f"Mock interview ({kind}): 12 typed answers → 12 / 12", txt.strip() == "12 / 12", txt)
+        pg.wait_for_timeout(1900)
+        txt = pg.evaluate("() => __mw.root.querySelector('.score')?.textContent || ''").strip()
+        pg.evaluate("() => document.querySelector('.giftbox')?.click()"); pg.wait_for_timeout(700)
+        r = pg.evaluate(f"() => ({{ wins: __world.store.bossWins('m-p{n}'), prize: __world.store.owns('{prize}'), st: __world.store.stars('mi-{n}'), ib: __world.store.get().packs.maths.pages['{n}'].ib }})")
+        if txt != "12 / 12" or r["wins"] != 1 or not r["prize"] or r["st"] != 3 or r["ib"] != 12: bad.append(f"p{n} {txt} {r}")
+        if n == 8: shot(pg, "maths-interview-result")
+        pg.evaluate("() => [...document.querySelectorAll('.modal .btn')].find(b => /Great|Take it|Wear|Yay|OK/.test(b.textContent))?.click()"); pg.wait_for_timeout(200)
         mact(pg, "exit"); pg.wait_for_timeout(150)
-    shot(pg, "maths-interview")
+    check("Maths Interviews: all 8 pages, 12 typed answers → 12 / 12, gold, and each page's pet on the first 10+ score", not bad, str(bad[:3]))
+    # not enough → no prize again, no double prize
+    owned0 = pg.evaluate("() => Object.keys(__world.store.get().owned).length")
+    pg.evaluate("() => __world.launch('mi-2')"); pg.wait_for_timeout(400); mact(pg, "startiv", "type")
+    for i in range(12): mact(pg, "pass"); pg.wait_for_timeout(420)
+    pg.wait_for_timeout(500)
+    check("Interview: all passed → 0 / 12, no new prize", pg.evaluate("() => __mw.root.querySelector('.score')?.textContent.trim()") == "0 / 12" and pg.evaluate("() => Object.keys(__world.store.get().owned).length") == owned0)
+    mact(pg, "exit"); pg.wait_for_timeout(150)
     # time-up and Pass
     pg.evaluate("() => { __world.store.get().packs.maths.settings.itime = 1; }")
-    pg.evaluate("() => __world.launch('miv-core')"); pg.wait_for_timeout(400); mact(pg, "startiv", "type")
+    pg.evaluate("() => __world.launch('mi-1')"); pg.wait_for_timeout(400); mact(pg, "startiv", "type")
+    shot(pg, "maths-interview")
     pg.wait_for_timeout(2300); moved = pg.evaluate("() => __mw.SES && __mw.SES.i >= 1")
     pg.evaluate("() => { __world.store.get().packs.maths.settings.itime = 0; }")
     mact(pg, "pass"); pg.wait_for_timeout(450)
-    check("Mock interview: time-up moves on by itself; Pass works", moved and pg.evaluate("() => __mw.SES.i >= 2"))
+    check("Interview: time-up moves on by itself; Pass works", moved and pg.evaluate("() => __mw.SES.i >= 2"))
     pg.evaluate("() => { __world.store.get().packs.maths.settings.itime = 45; }")
     pg.locator(".game-hud .iconbtn").first.click(); pg.wait_for_timeout(200)
     # spoken mode
-    pg.evaluate("() => __world.launch('miv-core')"); pg.wait_for_timeout(400); mact(pg, "startiv", "oral")
+    pg.evaluate("() => __world.launch('mi-5')"); pg.wait_for_timeout(400); mact(pg, "startiv", "oral")
     for i in range(12): mact(pg, "reveal"); mact(pg, "self", "1" if i % 3 else "0"); mact(pg, "next")
     pg.wait_for_timeout(200)
     txt = pg.evaluate("() => __mw.root.querySelector('.score')?.textContent || ''")
-    check("Mock interview (say it, grown-up marks): 8 / 12", txt.strip() == "8 / 12", txt)
+    check("Interview (say it, grown-up marks): 8 / 12", txt.strip() == "8 / 12", txt)
     mact(pg, "exit"); pg.wait_for_timeout(150)
     # Oops Book → Practise it / Fix my mistakes
     n_before = pg.evaluate("() => __world.store.mistakesFor('maths').length")
@@ -373,11 +380,14 @@ def maths_all(br):
     check("Oops Book: maths mistakes have 'Practise it'; Fix my mistakes clears them", has_btns and pg.evaluate("() => __world.store.mistakesFor('maths').length") < n_before, f"{n_before}")
     mact(pg, "exit"); pg.wait_for_timeout(150)
     # scratch paper
-    pg.evaluate("() => __world.launch('m-ops')"); pg.wait_for_timeout(300); mact(pg, "practice")
+    pg.evaluate("() => __world.launch('mp-1')"); pg.wait_for_timeout(300); mact(pg, "practice")
     bx = pg.locator("#scv").bounding_box()
     pg.mouse.move(bx["x"] + 40, bx["y"] + 60); pg.mouse.down(); pg.mouse.move(bx["x"] + 170, bx["y"] + 120, steps=8); pg.mouse.up()
     inked = pg.evaluate("() => { const c = __mw.root.getElementById('scv'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return true; return false; }")
     check("Maths scratch paper draws", inked)
+    mact(pg, "notes"); pg.wait_for_timeout(150)
+    check("📘 Tip shows the method for this question type", "Page 1 · Q1" in pg.evaluate("() => __mw.root.getElementById('mbox').textContent"))
+    close_modals(pg)
     shot(pg, "maths-play")
     pg.locator(".game-hud .iconbtn").first.click(); pg.wait_for_timeout(200)
     # grown-ups page lists every island
@@ -386,6 +396,15 @@ def maths_all(br):
     shot(pg, "parents")
     check("Grown-ups page has a section per island", secs == 3, str(secs))
     check("Maths Island flows without errors", not pg.errs, str(pg.errs[:3]))
+    pg.close()
+    # Oops entries from the first Maths Island (topic questions) are cleared once
+    pg = new_page(br)
+    pg.evaluate("""() => { localStorage.clear(); localStorage.setItem('wildquest-bio-p6-v1', JSON.stringify({ stars: { 'm-ops': 3 }, pouch: 9, lifetime: 9, mistakes: [
+        { key: 'm-a', pack: 'maths', html: true, q: 'old', ans: '1', gen: 'ops.addmul' }, { key: 'k2', pack: 'science', q: 'Is a bat a bird?', ans: 'No' }],
+        packs: { maths: { settings: { itime: 30 }, topics: { ops: { ps: 3 } }, gens: {}, tests: [], interviews: [] } } })); }""")
+    pg.reload(); pg.wait_for_timeout(400); pg.evaluate("() => document.querySelector('.start').click()"); pg.wait_for_timeout(500)
+    r = pg.evaluate("() => { const s = __world.store; return { m: s.mistakesFor('maths').length, sci: s.mistakesFor('science').length, pouch: s.pouch(), itime: s.get().packs.maths.settings.itime, pages: typeof s.get().packs.maths.pages }; }")
+    check("Old Maths Island save: settings and pouch kept, old topic mistakes cleared, science mistakes kept", r == {"m": 0, "sci": 1, "pouch": 9, "itime": 30, "pages": "object"}, str(r))
     pg.close()
 
 # =========================================================
@@ -435,7 +454,7 @@ def three_d(br3):
     pg.goto(BASE); pg.wait_for_timeout(2500)
     pg.evaluate("() => document.querySelector('.start').click()"); pg.wait_for_timeout(2600)
     shot(pg, "3d-map")
-    for isl, z in [("science", "lab"), ("maths", "peak"), ("chinese", "ch1")]:
+    for isl, z in [("science", "lab"), ("maths", "p8"), ("maths", "p6"), ("chinese", "ch1")]:
         pg.evaluate("(i) => __world.enterIsland(i)", isl); pg.wait_for_timeout(1800)
         shot(pg, f"3d-{isl}")
         pg.evaluate("([i, z]) => __world.openZone(i, z)", [isl, z]); pg.wait_for_timeout(1400)
@@ -447,7 +466,7 @@ def no_hscroll(br):
     for w, h in [(1180, 820), (1024, 768), (768, 1024), (390, 844)]:
         pg = new_page(br, w, h)
         bad = []
-        for name, js in [("map", "() => __world.showMap()"), ("maths", "() => __world.enterIsland('maths')"), ("science-boss", "() => __wq.launch('boss')"), ("maths-topic", "() => __world.launch('m-fracmix')"), ("maths-interview", "() => __world.launch('miv-full')")]:
+        for name, js in [("map", "() => __world.showMap()"), ("maths", "() => __world.enterIsland('maths')"), ("science-boss", "() => __wq.launch('boss')"), ("maths-page", "() => __world.launch('mp-2')"), ("maths-interview", "() => __world.launch('mi-8')")]:
             pg.evaluate("() => document.querySelectorAll('.game').forEach(g => g.remove())")
             pg.evaluate(js); pg.wait_for_timeout(700)
             if name == "maths-interview": pg.locator("[data-act='startiv'][data-arg='type']").click(); pg.wait_for_timeout(300)

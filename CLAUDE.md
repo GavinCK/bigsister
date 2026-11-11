@@ -23,7 +23,8 @@
 - 主角係 Q 版熊貓「圈圈」（`catSVG()`）。
 - 例外：Joycelyn's Islands（`games/joycelyn-world`，即係舊 Wild Quest＋數學島＋成語島）原始碼係模組化，放喺 `src/`（`core/` 共用、`world/` 3D 群島、`islands/<科>/` 每個島一個 pack）；改完要 `node tools/build_world.mjs` 生成單一 HTML，再跑 `python tools/smoke_world.py`。唔好直接改 build 出嚟嘅 `index.html`。
   - 常識島同數學島用英文（英文授課）；**數學島全部英文**，包括介面、提示、鼓勵說話同家長頁數學嗰節（Gavin 指定）。成語島用中文。
-  - 進度 key 仍然係 `wildquest-bio-p6-v1`，唔好改；每個島嘅資料放 `store.pack(id)`；mode id 全局唯一（數學 `m-`／`mz-`／`miv-`，中文 `cn-`），改 id 會清走星星。
+  - 進度 key 仍然係 `wildquest-bio-p6-v1`，唔好改；每個島嘅資料放 `store.pack(id)`；mode id 全局唯一（數學 `mp-`／`mi-`／`m-drill`／`m-fix`，中文 `cn-`），改 id 會清走星星。
+  - 數學島係**一頁卷一個區**（Gavin 指定），每區 12 題（Q1–Q8、9a、9b、10a、10b）逐題跟原卷：同題型、同步數、同樣大細嘅數字，要心算得到；**唔好加深、唔好加卷以外嘅題型**。題目喺 `papers.js`；改完跑 `node tools/maths_pages_doc.mjs games/joycelyn-world/docs/maths-pages.md` 更新對照表。原卷有版權：唔好 commit PDF、唔好用原卷嘅數字。
   - 數學答案用 `R()` 分數精確計，唔好用 float；新題目產生器要過 smoke test 嘅 200 次檢查。
   - 成語島用 iframe 開成語大冒險再 call `window.go()`，星星讀 `chengyuAdventure_v1`；改成語大冒險時唔好整爛呢兩樣。
   - 舊網址 `games/wild-quest/index.html` 係轉址頁，要保留（iPad 主畫面 icon 用緊）。

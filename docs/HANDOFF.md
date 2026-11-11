@@ -1,6 +1,6 @@
 # 交接文件：BIGSISTER 學習遊戲室
 
-最後更新：2026-11-11
+最後更新：2026-11-12
 
 呢份文件寫俾之後接手嘅 AI 或者工程師。讀完應該知道遊戲點樣砌、資料放喺邊、點樣加新內容、點樣測試同上線。
 
@@ -166,7 +166,7 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 
 詳細玩法、每個島嘅內容來源同「待確認」睇 `games/joycelyn-world/README.md`（科學島詳細：`games/joycelyn-world/docs/science-island.md`）。
 
-背景：Joycelyn 準備升中，數學係**面試即場口問心算**（Gavin 提供嘅 8 張「Mental Practice P6」：P1–5 最重要，P6–8 深啲遲啲先練）。學校英文授課，所以**數學島全部英文**（Gavin 指定，連鼓勵說話同家長頁數學嗰節都係英文）。常識亦係英文；中文島保持中文。
+背景：Joycelyn 準備升中，數學係**面試即場口問心算**（Gavin 提供嘅 8 張「Mental Practice P6」：P1–5 最重要，P6–8 深啲遲啲先練）。2026-11-12 Gavin 試玩後要求數學島**一頁卷一個區**、題目**精確跟返卷嘅難度**（第一版按題種分、加咗卷以外嘅變化，好多題超出心算），所以而家每區 12 題逐題對應原卷嗰題。學校英文授課，所以**數學島全部英文**（Gavin 指定，連鼓勵說話同家長頁數學嗰節都係英文）。常識亦係英文；中文島保持中文。
 
 ### 7.1 重點
 
@@ -182,24 +182,24 @@ python tools/smoke_test.py --shots out/   # 順便影 screenshot
 | `src/js/main.js` | Shell：標題、海圖（全部島）、島嶼 HUD（zone chips、上面一排按鈕）、zone card、`launch()`。`PACKS = [science, maths, chinese]` |
 | `src/js/world/engine.js` | three.js 群島引擎：`createWorld(canvas)` → `addIsland(def)`、`addZone`、`setDecor`、`setAvatar`、`setBoss`、`showMap()`、`overview(id)`、`focus(id, zone)`。每個島係一個 `THREE.Group`（本地座標），用 `kit`（`terrain`、`palm`、`rock`、`critter`、`sign`、`clouds`……）砌 |
 | `src/js/core/store.js` | 進度（見上）＋ `pack()`、`markDay()`、`streak()`、`mistakesFor(pack)` |
-| `src/js/core/runner.js` | 遊戲框同 `api`：原本 Wild Quest 小遊戲嘅全部 api，加 `complete()`（只記錄＋出星，俾有自己結果畫面嘅島用，例如數學）、`exit()`、`relaunch()`、`openGift()`、`openRoad()`、`pack`、`opts` |
+| `src/js/core/runner.js` | 遊戲框同 `api`：原本 Wild Quest 小遊戲嘅全部 api，加 `complete()`（只記錄＋出星，俾有自己結果畫面嘅島用，例如數學；mode 有 `reward` 而 `won` 為真就出獎品）、`exit()`、`relaunch()`、`switchTo(modeId, opts)`（轉去同島另一個 mode）、`openGift()`、`openRoad()`、`pack`、`opts` |
 | `src/js/core/economy.js`、`items.js` | Star Shop、Star Road、禮物、道具；`BOSS_PRIZES`（所有島嘅大佬獎品）；裝飾有 `island` 欄 |
 | `src/js/core/books.js` | 多島 Oops Book（分頁、HTML 錯題、每個島可以加 header／action）、家長頁（每個島一節） |
 | `src/js/core/art.js` | `art(id)`、`registerCreatures()`（島自己登記卡片資料） |
 | `src/js/islands/science/` | 原本 Wild Quest 全部內容（`data.js`、`bosses.js`、`games/*.js`、Field Guide）；`island.js` 係原本嘅 3D 島 |
-| `src/js/islands/maths/` | `mathlib.js`（`R` 有理數運算、19 個題種、89 個題目產生器、`checkAnswer`）、`engine.js`（所有數學畫面：Practice／Test／Zone Test／Interview／Fix，用 Shadow DOM 隔離 CSS）、`data.js`（區域、`store.pack('maths')`）、`island.js`（算盤、批、天秤、雪山、面試廳） |
+| `src/js/islands/maths/` | `papers.js`（**8 頁 × 12 題**：每題一個產生器，跟原卷嗰題嘅結構同數字大細）、`mathlib.js`（`R` 有理數運算、`checkAnswer` 改卷、語音解析、角／鐘圖）、`engine.js`（所有數學畫面：頁面／Practice paper／Drill／Interview／Fix，用 Shadow DOM 隔離 CSS）、`data.js`（`store.pack('maths')`：每頁 `pages[n]`、每題 `gens[id]`、`interviews`）、`pack.js`（8 個區、家長頁）、`island.js`（8 個地標＋面試廳） |
 | `src/js/islands/chinese/` | `pack.js`：iframe 開 `../chengyu-adventure/index.html` 再 call `go()`；星星橋讀 `chengyuAdventure_v1`（只讀），新星入星星袋 |
 
 Pack 介面、mode id 規則同「加一個新島」步驟寫晒喺 `games/joycelyn-world/README.md`「架構」一節。重點：
 
-- Mode id 全局唯一：科學用原本 id；數學 `m-<topic>`（Practice）、`m-<topic>-t`（Test）、`mz-<zone>`（Zone Test）、`miv-core`／`miv-full`、`m-fix`；中文 `cn-*`。改咗 id 會清走嗰項星星。
-- 大佬獎品 key：科學係 zone id，數學係 `m-<zone>`。
+- Mode id 全局唯一：科學用原本 id；數學 `mp-<頁>`（Practice paper）、`mi-<頁>`（Interview）、`m-drill`、`m-fix`（隱藏）；中文 `cn-*`。改咗 id 會清走嗰項星星。（第一版數學嘅 `m-<topic>`／`mz-*`／`miv-*` 已經停用。）
+- 大佬獎品 key：科學係 zone id，數學係 `m-p<頁>`（`mi-<頁>` mode 嘅 `reward`，第一次 Interview 10/12 以上就出）。
 - 成語大冒險改嘢時，唔好整爛 `window.go(screen)` 同 `chengyuAdventure_v1` 嘅 `battle`／`c2.st`／`dlc.st`，因為成語島靠佢哋。
 
 ### 7.3 加內容
 
 - 科學：同以前一樣，`islands/science/data.js`、`bosses.js`（玩法同內容來源見 `games/joycelyn-world/docs/science-island.md`）。島上裝飾位置喺 `islands/science/island.js`。
-- 數學：喺 `mathlib.js` 個題種嘅 `gens` 加一個 `{k, label, f()}`（`f()` 回傳 `{html, ans, hints, steps}`，`ans` 用 `R()` 分數；`kind` 可以係 `choice`／`order`／`time` 等），smoke test 會自動每個生成 200 次，檢查答案格式同 `checkAnswer` 接受正確答案。新題種要加入 `T_CORE`／`T_PRO` 同 `data.js` 嘅 `MZONES`，再喺 `island.js` 加 Pal 位置。
+- 數學：每頁嘅 12 題喺 `papers.js` 嘅 `page(n, …, [12 個 slot])`。每個 slot 係 `{lab, skill, tip, f()}`，`f()` 回傳 `{html, ans, hints:[2], steps}`（`ans` 用 `R()` 分數；`kind` 可以係 `choice`／`order`／`time`）。**改題目要守住原卷嗰題嘅難度**：同一個題型、同一種步數、同樣大細嘅數字，答案心算得到。smoke test 每個 slot 生成 200 次檢查答案；改完再跑 `node tools/maths_pages_doc.mjs games/joycelyn-world/docs/maths-pages.md` 更新對照表。加新一頁卷：加一個 `page()`，再喺 `data.js` 嘅 `PAGE_ART`、`core/items.js` 嘅 `BOSS_PRIZES`（`m-p<頁>`）同 `island.js` 嘅 `MPOS` 加位置。
 - 新科／新島：照 README 步驟開 `islands/<id>/`。
 
 ### 7.4 Build、測試、上線

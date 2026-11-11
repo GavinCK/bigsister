@@ -1,19 +1,22 @@
 // =============================================================
-//  Maths Island · the maths "game": topic page, Practice, Test, Zone Test (boss),
-//  Mock Interview and Fix-my-mistakes. Runs inside the shared game frame; all of its
-//  screens live in a Shadow DOM (style.js) so they never clash with the island CSS.
-//  Results are paid out through api.complete() → shared pouch, Star Road, boss prizes.
+//  Maths Island · the maths "game". One page of the P6 Mental papers at a time:
+//  the page screen (its 12 question types), Practice paper (hints), Drill (one question type),
+//  Interview (read aloud, timed, no hints; typed or said out loud) and Fix-my-mistakes.
+//  All screens live in a Shadow DOM (style.js) so they never clash with the island CSS.
+//  Results are paid out through api.complete() → shared pouch, Star Road, page prizes.
 // =============================================================
 import { store } from '../../core/store.js';
 import { art } from '../../core/art.js';
+import { ALL_ITEMS, BOSS_PRIZES } from '../../core/items.js';
 import { confetti } from '../../core/fx.js';
 import { playMusic, stopMusic } from '../../core/audio.js';
 import * as L from './mathlib.js';
+import { PAGE, GEN, makeQ, paperQs } from './papers.js';
 import { CSS } from './style.js';
-import { MZONE, settings, tstat, gstat, palId, hasPal, medalOf, mastered, zoneOfTopic } from './data.js';
+import { settings, pstat, gstat, medalOf, ivStars, prizeKey, pageWon, pageSub, WIN_SCORE, PAGE_ART } from './data.js';
 
 export const SCORE = false;
-const { TOPIC, GEN, BLUEPRINT, makeQ, checkAnswer, ansHTML, ansEntry, entryText, speakify, parseSpoken, parseNumText, FORM_MSG, esc, pick, shuffle, two } = L;
+const { checkAnswer, ansHTML, ansEntry, entryText, speakify, parseSpoken, parseNumText, FORM_MSG, esc, pick, two } = L;
 
 /* ---------- encouragement ---------- */
 const MSG = {
@@ -66,7 +69,8 @@ function panda(cls = '') {
 }
 const artHTML = (id, cls = '') => art(id, { cls }).outerHTML;
 const starsHTML = (n, max = 3) => `<span class="stars" aria-label="${n} of ${max} stars">${'★'.repeat(n)}<span class="off">${'★'.repeat(max - n)}</span></span>`;
-const medalChip = (pb) => { const md = pb >= 0 ? medalOf(pb) : null; return pb < 0 ? '—' : `<span class="medalchip">${md ? artHTML(md[0]) : ''}${pb}%</span>`; };
+const medalChip = (ib) => { const md = ib >= 0 ? medalOf(ib) : null; return ib < 0 ? '—' : `<span class="medalchip">${md ? artHTML(md[0]) : ''}${ib} / 12</span>`; };
+const prizeOf = (n) => ALL_ITEMS[BOSS_PRIZES[prizeKey(n)]] || null;
 
 export default async function play(api) {
   const m = api.mode, sfx = api.sfx;
@@ -90,44 +94,34 @@ export default async function play(api) {
   /* =========================================================
      ENTRY SCREENS
      ========================================================= */
-  function topicScreen(tid) {
-    const t = TOPIC[tid], st = tstat(tid), got = hasPal(tid);
-    api.frame.setTitle(t.en); api.frame.setProgress(0);
-    const gl = t.gens.map((g) => { const s = gstat(g.id); return `<li><span>${g.label}</span><small>${s.n ? Math.round(s.c / s.n * 100) + '% of ' + s.n : 'new'}</small></li>`; }).join('');
+  function pageScreen(n) {
+    const P = PAGE[n], st = pstat(n), won = pageWon(n), prize = prizeOf(n);
+    api.frame.setTitle(`Page ${n} · ${pageSub(P)}`); api.frame.setProgress(0);
+    const rows = P.slots.map((g) => { const s = gstat(g.id); const acc = s.n ? Math.round(s.c / s.n * 100) : -1;
+      return `<li><span class="lab">${g.lab}</span><span class="sk">${g.skill}</span><small class="${acc < 0 ? '' : acc >= 80 ? 'good' : acc < 50 ? 'weak' : ''}">${acc < 0 ? 'new' : acc + '%'}</small><button class="btn sm" data-act="drill" data-arg="${g.id}" aria-label="Drill ${g.lab}">Drill ▶</button></li>`; }).join('');
     setScreen(`
-    <div class="thead" style="--c:${t.color}"><span class="ic ${got ? '' : 'locked'}" title="${got ? t.pal[1] : 'Locked Maths Pal'}">${artHTML(t.pal[0])}</span>
-      <div><h2>${t.en}</h2><div class="src">${t.lv === 'core' ? 'Core · Pages 1–5' : 'Challenge · Pages 6–8 (hard!)'} · from ${t.src}</div>
-      <div style="margin-top:6px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-weight:800">Practice best ${starsHTML(st.ps)} <span>Test best: ${medalChip(st.pb)}</span>${mastered(tid) ? ' <span>👑 Mastered!</span>' : ''}</div>
-      <div class="palrow">${got ? `${artHTML(t.pal[0])} You have won ${t.pal[1]}!` : `🎁 Score 80%+ in the Test to win <b>${t.pal[1]}</b> for your Maths Pals book!`}</div></div></div>
+    <div class="thead" style="--c:${P.level === 'core' ? '#E3FBEF' : '#FFE7F2'}"><span class="ic">${artHTML(PAGE_ART[n])}</span>
+      <div><h2>Page ${n} · ${pageSub(P)}</h2><div class="src">${P.level === 'core' ? 'Core paper (Pages 1–5) — the most important' : 'Challenge paper (Pages 6–8) — harder, for later'}</div>
+      <div style="margin-top:4px;font-weight:700">${P.about}</div>
+      <div style="margin-top:6px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-weight:800"><span>Practice best ${starsHTML(st.ps)}</span><span>Interview best: ${medalChip(st.ib)}</span></div>
+      ${prize ? `<div class="palrow">${artHTML(prize.art)}<span>${won ? `You won the ${prize.name} for this page!` : `🎁 Score <b>${WIN_SCORE} / 12</b> in the Interview to win the <b>${prize.name}</b>!`}</span></div>` : ''}</div></div>
     <div class="cols">
-      <div class="panel"><h3>📘 Key ideas</h3><ul class="notes">${t.notes.map((n) => `<li>${n}</li>`).join('')}</ul>
-        <div class="ex"><div class="exq">Example: ${t.ex.q}</div><ol class="steps" style="margin:6px 0 0;padding-left:20px">${t.ex.steps.map((s) => `<li>${s}</li>`).join('')}</ol></div></div>
+      <div class="panel"><h3>🧩 The 12 questions on this page</h3><p class="lbl" style="margin:0 0 6px">Same kinds of questions as the paper, with new numbers every time. Tap <b>Drill</b> to practise one kind 5 times.</p><ul class="slots">${rows}</ul></div>
       <div>
         <div class="modebtns">
-          <button class="modebtn" data-act="practice" style="--c:#E3FBEF"><span class="ic">✏️</span><span><b>Practice</b><span>8 questions · hints 💡 · scratch paper · learn as you go</span></span></button>
-          <button class="modebtn" data-act="testintro" style="--c:#FFF6D6"><span class="ic">📝</span><span><b>Test</b><span>8 questions · no hints · marked at the end · win a Maths Pal</span></span></button>
+          <button class="modebtn" data-act="practice" style="--c:#E3FBEF"><span class="ic">✏️</span><span><b>Practice paper</b><span>Q1 → Q10b like Page ${n} · hints 💡 · scratch paper · learn as you go</span></span></button>
+          <button class="modebtn" data-act="interview" style="--c:#FFF6D6"><span class="ic">🎤</span><span><b>Interview</b><span>12 questions read aloud · ${S.itime ? S.itime + ' s each' : 'no timer'} · no hints, no paper</span></span></button>
         </div>
-        <div class="panel" style="margin-top:16px"><h3>🧩 Skills</h3><ul class="skills">${gl}</ul></div>
-        <button class="btn sm ghost" data-act="settings">⚙️ Maths settings</button>
+        <div class="btnrow" style="margin-top:12px"><button class="btn sm ghost" data-act="settings">⚙️ Maths settings</button><button class="btn sm ghost" data-act="exit">🏝️ Back to the island</button></div>
       </div>
     </div>`);
   }
-  function testIntro(tid) {
-    const t = TOPIC[tid];
-    modal(`<h3>📝 ${t.en} — Test</h3><p><b>8 questions. No hints, no notes.</b> You'll see your marks at the end. Score <b>80%+</b> to win <b>${t.pal[1]}</b>!</p><p>Tip: check each answer before you tap Next. Fractions in simplest form!</p><div class="row"><button class="btn" data-act="close">Not yet</button><button class="btn go" data-act="starttest">Start ▶</button></div>`);
-  }
-  function zoneIntro(zid) {
-    const z = MZONE[zid], names = z.topics.map((x) => TOPIC[x].en).join(', ');
-    api.frame.setTitle(`Zone Test · ${z.title}`);
-    setScreen(`<div class="thead bosshead" style="--c:#2B2140"><span class="ic">${artHTML(z.boss.art)}</span><div><h2>${z.boss.title}</h2><div class="src" style="color:#fff0">.</div>
-      <div style="font-weight:800">challenges you to the <b>${z.title} Zone Test</b>!</div></div></div>
-      <div class="panel"><h3>The rules</h3><ul class="introtips"><li><b>10 questions</b> mixed from: ${names}.</li><li>No hints, no notes — just like an exam. Marks at the end.</li><li>Score <b>80% or more</b> to beat ${z.boss.title}. The first win gives you a prize!</li></ul>
-      <div class="btnrow"><button class="btn go" data-act="startzone">Fight! ▶</button><button class="btn" data-act="exit">Back to the island</button></div></div>`);
-  }
-  function interviewIntro(kind) {
-    api.frame.setTitle(kind === 'core' ? 'Mock Interview · Core' : 'Mock Interview · Full');
-    setScreen(`<div class="thead" style="--c:var(--sun)"><span class="ic">🎤</span><div><h2>${kind === 'core' ? 'Mock Interview · Core (Pages 1–5)' : 'Mock Interview · Full (Pages 1–8)'}</h2>
-      <div style="font-weight:800;margin-top:4px">12 quick questions, just like the Mental papers (Q1–Q10 with 9a/9b and 10a/10b).</div></div></div>
+  function interviewIntro(n) {
+    const P = PAGE[n], prize = prizeOf(n), won = pageWon(n);
+    api.frame.setTitle(`Interview · Page ${n}`);
+    setScreen(`<div class="thead" style="--c:var(--sun)"><span class="ic">🎤</span><div><h2>Interview · Page ${n}</h2><div class="src">${pageSub(P)}</div>
+      <div style="font-weight:800;margin-top:4px">12 quick questions, the same kinds as Page ${n} (Q1–Q8, 9a, 9b, 10a, 10b), with new numbers.</div>
+      ${prize ? `<div class="palrow">${artHTML(prize.art)}<span>${won ? `Already won: ${prize.name}. Go for 12 / 12!` : `Score <b>${WIN_SCORE} / 12</b> or more to win the <b>${prize.name}</b>!`}</span></div>` : ''}</div></div>
       <div class="cols"><div class="panel"><h3>Interview tips</h3><ul class="introtips">
         <li>${S.speak ? 'Each question is read aloud. ' : ''}${S.itime ? `You have <b>${S.itime} seconds</b> per question.` : 'No time limit.'} No hints, no paper.</li>
         <li>Listen to the whole question first. Work it out in your head.</li>
@@ -136,7 +130,7 @@ export default async function play(api) {
       <div class="modebtns">
         <button class="modebtn" data-act="startiv" data-arg="type" style="--c:#E3FBEF"><span class="ic">✍️</span><span><b>Type or write</b><span>Keypad, Apple Pencil or 🎤 voice</span></span></button>
         <button class="modebtn" data-act="startiv" data-arg="oral" style="--c:#FFE7F2"><span class="ic">🗣️</span><span><b>Say it out loud</b><span>A grown-up plays the interviewer and marks you</span></span></button>
-        <button class="btn sm ghost" data-act="settings">⚙️ Interview settings</button></div></div>`);
+        <div class="btnrow" style="margin:0"><button class="btn sm ghost" data-act="page">📄 Page ${n} questions</button><button class="btn sm ghost" data-act="settings">⚙️ Settings</button><button class="btn sm ghost" data-act="exit">🏝️ Island</button></div></div></div>`);
   }
   function settingsHTML() {
     const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) => `<button class="${S[k] === v ? 'on' : ''}" data-act="set" data-arg="${k}:${v}">${l}</button>`).join('')}</div>`;
@@ -144,7 +138,6 @@ export default async function play(api) {
     <div class="setrow"><span><b>Answer with</b><br><small>Keypad: on-screen buttons (Apple Pencil can also write in the boxes). iPad keyboard: the system keyboard, with its 🎤 dictation key.</small></span>${seg('input', [['pad', 'Keypad'], ['kbd', 'iPad keyboard']])}</div>
     <div class="setrow"><b>Interview time per question</b>${seg('itime', [[30, '30 s'], [45, '45 s'], [60, '60 s'], [90, '90 s'], [0, 'Off']])}</div>
     <div class="setrow"><b>Read interview questions aloud</b>${seg('speak', [[true, 'On'], [false, 'Off']])}</div>
-    <div class="setrow"><b>Scratch paper in Tests</b>${seg('scratchTest', [[true, 'On'], [false, 'Off']])}</div>
     <div class="row"><button class="btn pri" data-act="close">Done</button></div>`;
   }
 
@@ -158,21 +151,21 @@ export default async function play(api) {
     return { mode: 'n', s: '', w: '', n: '', d: '' };
   }
   const mkItem = (q, extra = {}) => Object.assign({ q, entry: newEntry(q), tries: 0, hints: 0, ok: null, first: null, done: false, revealed: false, shownSteps: false, ms: 0, fb: null, retry: false }, extra);
-  function genList(ids, n) { const out = []; let pool = []; while (out.length < n) { if (!pool.length) pool = shuffle(ids); let k = pool.findIndex((g) => g !== out[out.length - 1]); if (k < 0) k = 0; out.push(pool.splice(k, 1)[0]); } return out; }
+  function genList(ids, n) { const out = []; let pool = []; while (out.length < n) { if (!pool.length) pool = [...ids].sort(() => Math.random() - .5); let k = pool.findIndex((g) => g !== out[out.length - 1]); if (k < 0) k = 0; out.push(pool.splice(k, 1)[0]); } return out; }
   function start(kind, arg, oral = false) {
-    let items = [], title = m.title, topic = null;
-    if (kind === 'practice' || kind === 'test') { topic = arg; title = (kind === 'practice' ? 'Practice · ' : 'Test · ') + TOPIC[arg].en; items = genList(TOPIC[arg].gens.map((g) => g.id), 8).map((id) => mkItem(makeQ(id))); }
-    else if (kind === 'zone') { const z = MZONE[arg]; title = `Zone Test · ${z.title}`; items = genList(z.topics.flatMap((t) => TOPIC[t].gens.map((g) => g.id)), 10).map((id) => mkItem(makeQ(id))); }
+    let items = [], title = m.title, page = null;
+    if (kind === 'practice') { page = arg; title = `Practice · Page ${arg}`; items = paperQs(arg).map((q) => mkItem(q, { lab: q.lab })); }
+    else if (kind === 'interview') { page = arg; title = `Interview · Page ${arg}`; items = paperQs(arg).map((q) => mkItem(q, { lab: q.lab })); }
+    else if (kind === 'drill') { const g = GEN[arg]; page = g.page; title = `Drill · Page ${g.page} ${g.lab}`; items = Array.from({ length: 5 }, () => mkItem(makeQ(arg))); }
     else if (kind === 'fix') { title = 'Fix my mistakes'; const gens = arg.filter((g) => GEN[g]).slice(0, 8); items = genList(gens, Math.max(4, Math.min(8, gens.length * 2))).map((id) => mkItem(makeQ(id))); }
-    else if (kind === 'interview') { title = arg === 'core' ? 'Mock Interview · Core' : 'Mock Interview · Full'; items = BLUEPRINT[arg].map(([lab, tids]) => mkItem(makeQ(pick(TOPIC[pick(tids)].gens).id), { lab })); }
-    SES = { kind, arg, topic, title, items, i: 0, combo: 0, best: 0, t0: Date.now(), qT0: Date.now(), oral, retries: 0, fixed: 0 };
+    SES = { kind, arg, page, title, items, i: 0, combo: 0, best: 0, t0: Date.now(), qT0: Date.now(), oral, retries: 0, fixed: 0 };
     api.frame.setTitle(title);
-    if (kind === 'interview') stopMusic(); else playMusic(kind === 'practice' || kind === 'fix' ? 'lab' : 'garden');
+    if (kind === 'interview') stopMusic(); else playMusic('lab');
     renderPlay(); onItemShown();
   }
   const cur = () => SES && SES.items[SES.i];
-  const isTestLike = () => SES && (SES.kind === 'test' || SES.kind === 'interview' || SES.kind === 'zone');
-  const isPractice = () => SES && (SES.kind === 'practice' || SES.kind === 'fix');
+  const isTestLike = () => SES && SES.kind === 'interview';
+  const isPractice = () => SES && SES.kind !== 'interview';
 
   function stopTimer() { clearInterval(TIMER); TIMER = null; }
   function startTimer() {
@@ -199,24 +192,24 @@ export default async function play(api) {
   function renderPlay() {
     if (!SES) return;
     const it = cur(), q = it.q, k = SES.kind;
-    const showScratch = isPractice() || ((k === 'test' || k === 'zone') && S.scratchTest);
+    const showScratch = isPractice();
     const dots = SES.items.map((x, i) => {
       let c = i === SES.i ? 'cur' : '';
-      if (!isTestLike()) { if (x.done) c += x.first ? ' ok' : ' no'; } else if (x.done || ((k === 'test' || k === 'zone') && hasEntry(x))) c += ' done';
-      return `<button class="dot ${c}" ${k === 'test' || k === 'zone' ? `data-act="jump" data-arg="${i}"` : "tabindex='-1'"} aria-label="Question ${i + 1}">${x.lab ? x.lab.replace('Q', '') : i + 1}</button>`;
+      if (!isTestLike()) { if (x.done) c += x.first ? ' ok' : ' no'; } else if (x.done) c += ' done';
+      return `<button class="dot ${c}" tabindex="-1" aria-label="Question ${i + 1}">${x.lab && !x.retry ? x.lab.replace('Q', '') : x.retry ? '↺' : i + 1}</button>`;
     }).join('');
     const needPad = !SES.oral && (q.kind === 'num' || q.kind === 'time');
     setScreen(`<div class="play">
-      <div class="phead"><span class="chip">${{ practice: '✏️ Practice', test: '📝 Test', zone: '⚔️ Zone Test', interview: SES.oral ? '🗣️ Interview (say it)' : '🎤 Interview', fix: '🩹 Fix' }[k]}</span>
+      <div class="phead"><span class="chip">${{ practice: `✏️ Page ${SES.page}`, drill: `🎯 Drill`, interview: SES.oral ? `🗣️ Page ${SES.page} (say it)` : `🎤 Page ${SES.page}`, fix: '🩹 Fix' }[k]}</span>
         <div class="dots">${dots}</div>
         ${isPractice() ? `<span class="chip combo" id="combo">🔥 ${SES.combo}</span>` : ''}
         <span class="chip timer" id="tmr">⏱</span>
-        ${k === 'test' || k === 'zone' ? '<button class="btn sm pri" data-act="finishtest">Finish ✓</button>' : ''}</div>
-      <div class="qcard"><div class="qnum">${it.lab || 'Question ' + (SES.i + 1)}${it.retry ? " · <span style='color:var(--octo)'>try a new one like this</span>" : ''}</div>
+</div>
+      <div class="qcard"><div class="qnum">${it.retry ? 'One more like this' : it.lab ? `Page ${it.q.page} · ${it.lab}` : `Question ${SES.i + 1} · Page ${it.q.page} ${it.q.lab}`}${it.retry ? " · <span style='color:var(--octo)'>new numbers — you can do it!</span>" : ''}</div>
         <div class="qtext">${q.html}</div><button class="say" data-act="say" aria-label="Read the question aloud">🔊</button></div>
       <div class="answer" id="ansArea">${answerHTML(it)}</div>
       <div class="act" id="actArea">${actHTML(it)}</div>
-      <div class="work">${showScratch ? scratchHTML() : `<div class="nopaper"><div><div class="big">🧠</div>${k === 'interview' ? 'No paper in an interview —<br>work it out in your head!' : 'Scratch paper is off for tests.'}</div></div>`}</div>
+      <div class="work">${showScratch ? scratchHTML() : `<div class="nopaper"><div><div class="big">🧠</div>No paper in an interview —<br>work it out in your head!</div></div>`}</div>
       <div class="side">${needPad ? keypadHTML(q) : ''}<div class="mascot" id="mascot"><div>${panda()}</div><div class="bubble" id="bubble">${bubbleText(it)}</div></div></div>
     </div>`);
     if (showScratch) initScratch();
@@ -226,9 +219,8 @@ export default async function play(api) {
   function bubbleText(it) {
     const k = SES.kind;
     if (k === 'interview') return SES.oral ? 'Say your answer out loud, then tap <b>Show answer</b>.' : "Think in your head, then answer. Don't forget the unit!";
-    if (k === 'test' || k === 'zone') return 'No hints in a test — you can do it! Check your answer before moving on.';
     if (it.tries) return 'Read the hint, check your working, and try again!';
-    return pick(['Write your working on the scratch paper ✏️', 'Stuck? Tap 💡 Hint.', 'Take your time — accuracy first, speed later.', 'Use 📘 Notes if you forget the method.']);
+    return pick(['Try it in your head first — use the scratch paper if you need it ✏️', 'Stuck? Tap 💡 Hint.', 'Take your time — accuracy first, speed later.', 'Tap 📘 Tip to see the method for this kind of question.']);
   }
   function hasEntry(it) { const e = it.entry; if (!e) return false; if (it.q.kind === 'choice') return e.idx != null; if (it.q.kind === 'order') return e.order.length > 0; if (it.q.kind === 'time') return !!(e.h || e.m); return !!(e.s || e.n || e.d || e.w); }
   function firstField(q, e) { if (q.kind === 'time') return 'h'; if (q.kind !== 'num') return ''; return e.mode === 'n' ? 's' : e.mode === 'f' ? 'n' : 'w'; }
@@ -311,13 +303,12 @@ export default async function play(api) {
     const k = SES.kind, q = it.q;
     if (SES.oral) return it.done ? `<span class="grow"></span><button class="btn go" data-act="next">${SES.i === SES.items.length - 1 ? 'See results 🏁' : 'Next question ▶'}</button>` : '';
     if (k === 'interview') return '<button class="btn" data-act="pass">Pass</button><span class="grow"></span><button class="btn go" data-act="ivsubmit">Answer ✓</button>';
-    if (k === 'test' || k === 'zone') return `<button class="btn" data-act="prev"${SES.i === 0 ? ' disabled' : ''}>◀ Back</button><span class="grow"></span>${SES.i < SES.items.length - 1 ? '<button class="btn go" data-act="tnext">Next ▶</button>' : '<button class="btn go" data-act="finishtest">Finish ✓</button>'}`;
     let hh = '';
     if (it.hints && !it.done) hh += `<div class="hintbox">${q.hints.slice(0, it.hints).map((x, i) => `<p>💡 ${i + 1}. ${x}</p>`).join('')}${it.shownSteps ? `<p>👣 Method:</p><ol class="steps" style="margin:0;padding-left:22px">${q.steps.map((s) => `<li>${s}</li>`).join('')}</ol>` : ''}</div>`;
     if (it.fb) hh += fbHTML(it);
     if (it.done) return hh + `<span class="grow"></span><button class="btn go" data-act="next">${SES.i === SES.items.length - 1 ? 'See results 🏁' : 'Next ▶'}</button>`;
     const hb = it.hints < q.hints.length ? `💡 Hint${it.hints ? ' ' + (it.hints + 1) : ''}` : it.shownSteps ? '' : '👣 Show method';
-    return hh + `${hb ? `<button class="btn" data-act="hint">${hb}</button>` : ''}<button class="btn" data-act="notes">📘 Notes</button><span class="grow"></span><button class="btn go" data-act="check">Check ✓</button>`;
+    return hh + `${hb ? `<button class="btn" data-act="hint">${hb}</button>` : ''}<button class="btn" data-act="notes">📘 Tip</button><span class="grow"></span><button class="btn go" data-act="check">Check ✓</button>`;
   }
   function fbHTML(it) {
     const f = it.fb, q = it.q, steps = `<ol class="steps">${q.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`;
@@ -325,10 +316,10 @@ export default async function play(api) {
     if (f.type === 'bad') return `<div class="fb bad"><h4>${f.msg}</h4>${f.extra ? `<div style="font-weight:800">${f.extra}</div>` : ''}</div>`;
     return `<div class="fb info"><h4>${f.msg}</h4><div class="ansline">Answer: ${ansHTML(q)}</div>${steps}</div>`;
   }
-  function noteStats(q, ok) { const g = gstat(q.gen); g.n++; if (ok) g.c++; const t = tstat(q.topic); t.n++; if (ok) t.c++; t.last = Date.now(); }
+  function noteStats(q, ok) { const g = gstat(q.gen); g.n++; if (ok) g.c++; const t = pstat(q.page); t.n++; if (ok) t.c++; t.last = Date.now(); }
   function logMistake(it) {
     const q = it.q;
-    store.mistake({ pack: 'maths', key: `m-${q.uid}`, html: true, q: q.html, you: entryText(q, it.entry), ans: ansHTML(q), why: q.steps.join('<br>'), game: TOPIC[q.topic].en, gen: q.gen });
+    store.mistake({ pack: 'maths', key: `m-${q.uid}`, html: true, q: q.html, you: entryText(q, it.entry), ans: ansHTML(q), why: q.steps.join('<br>'), game: `Page ${q.page} · ${q.lab} ${GEN[q.gen].skill}`, gen: q.gen });
   }
   function practiceCheck() {
     const it = cur(); if (!it || it.done) return;
@@ -385,86 +376,68 @@ export default async function play(api) {
     ok ? sfx.good() : sfx.bad(); mood($('#mascot'), ok ? 'happy' : 'hurt');
     $('#ansArea').innerHTML = answerHTML(it); $('#actArea').innerHTML = actHTML(it);
   }
-  function finishTest(force) {
-    const blanks = SES.items.filter((x) => !hasEntry(x)).length;
-    if (blanks && !force) return askConfirm('Finish the test?', `You have ${blanks} question${blanks > 1 ? 's' : ''} with no answer.`, 'Finish anyway', () => finishTest(true), 'Keep going');
-    closeModal(); finishSession();
-  }
-
   /* ---------- results ---------- */
   function finishSession() {
     stopTimer(); hush(); api.frame.setProgress(1);
-    const k = SES.kind, items = SES.items, res = { kind: k, arg: SES.arg, topic: SES.topic, items, oral: SES.oral, lines: [] };
-    const secs = Math.round((Date.now() - SES.t0) / 1000);
+    const k = SES.kind, items = SES.items, res = { kind: k, arg: SES.arg, page: SES.page, items, oral: SES.oral, lines: [] };
     let pay;
-    if (k === 'practice' || k === 'fix') {
+    if (k !== 'interview') {
       const base = items.filter((x) => !x.retry), first = base.filter((x) => x.first).length, n = base.length;
       res.score = first; res.total = n; res.pct = Math.round(first / n * 100);
-      res.stars = first >= n - 1 ? 3 : first >= Math.ceil(n * .6) ? 2 : first >= Math.ceil(n * .35) ? 1 : 0;
-      if (k === 'practice') { const t = tstat(SES.topic); if (res.stars > t.ps) t.ps = res.stars; pay = api.complete({ stars: res.stars, score: res.pct }); }
-      else pay = api.complete({ stars: Math.min(3, SES.fixed), score: SES.fixed, recordAs: 'm-fix' });
-      res.head = res.stars ? 'Practice complete!' : 'Practice done — keep going!';
+      if (k === 'practice') {
+        res.stars = first >= 11 ? 3 : first >= 8 ? 2 : first >= 5 ? 1 : 0;
+        const t = pstat(SES.page); if (res.stars > t.ps) t.ps = res.stars;
+        pay = api.complete({ stars: res.stars, score: res.pct, won: false, recordAs: `mp-${SES.page}` });
+      } else if (k === 'drill') {
+        res.stars = first >= 5 ? 3 : first >= 4 ? 2 : first >= 3 ? 1 : 0;
+        pay = api.complete({ stars: res.stars, score: res.pct, won: false, recordAs: 'm-drill' });
+      } else pay = api.complete({ stars: Math.min(3, SES.fixed), score: SES.fixed, won: false, recordAs: 'm-fix' });
+      res.head = k === 'drill' ? `Drill done · ${GEN[SES.arg].lab} ${GEN[SES.arg].skill}` : res.stars ? 'Practice paper complete!' : 'Practice done — keep going!';
+      if (k === 'fix') res.head = 'Fix my mistakes — done!';
       res.line = `${first} / ${n} right first time · best streak ${SES.best} 🔥`;
       if (SES.fixed) res.lines.push(`🩹 ${SES.fixed} mistake type${SES.fixed > 1 ? 's' : ''} fixed`);
     } else {
       let correct = 0;
       items.forEach((x) => { if (!SES.oral) { const r = checkAnswer(x.q, x.entry); x.ok = r.ok; x.form = r.form; } if (x.ok) correct++; noteStats(x.q, x.ok); if (!x.ok) logMistake(x); });
       res.score = correct; res.total = items.length; res.pct = Math.round(correct / items.length * 100);
-      if (k === 'test') {
-        const t = tstat(SES.topic), md = medalOf(res.pct);
-        res.medal = md; res.stars = md ? md[2] : 0;
-        if (res.pct > t.pb) { if (t.pb >= 0) res.lines.push('📈 New best score!'); t.pb = res.pct; }
-        if (res.pct >= 80 && store.unlock(palId(SES.topic))) res.newPal = SES.topic;
-        store.pack('maths').tests.push({ t: Date.now(), topic: SES.topic, score: correct, total: items.length }); store.pack('maths').tests = store.pack('maths').tests.slice(-100);
-        pay = api.complete({ stars: res.stars, score: res.pct, recordAs: `${m.id}-t` });
-        res.head = md ? `${md[1]} medal!` : 'Test finished'; res.line = `${correct} / ${items.length} correct · ${Math.floor(secs / 60)} min ${secs % 60} s`;
-      } else if (k === 'zone') {
-        const won = res.pct >= 80; res.stars = res.pct >= 100 ? 3 : res.pct >= 90 ? 2 : won ? 1 : 0; res.won = won;
-        pay = api.complete({ stars: res.stars, score: res.pct, won });
-        const z = MZONE[SES.arg];
-        res.head = won ? `You beat ${z.boss.title}!` : `${z.boss.title} wins this time`; res.line = `${correct} / ${items.length} correct · you need 8 to win`;
-      } else {
-        const answered = items.filter((x) => x.ms), avg = answered.length ? Math.round(answered.reduce((a, x) => a + x.ms, 0) / answered.length / 1000) : 0;
-        const fast = items.filter((x) => x.ok && x.ms && x.ms < 10000).length;
-        res.stars = correct >= 11 ? 3 : correct >= 9 ? 2 : correct >= 6 ? 1 : 0;
-        store.pack('maths').interviews.push({ t: Date.now(), kind: SES.arg, score: correct, total: items.length, avg, fast, oral: SES.oral }); store.pack('maths').interviews = store.pack('maths').interviews.slice(-60);
-        pay = api.complete({ stars: res.stars, score: correct });
-        res.head = correct >= 11 ? 'Interview star! 🌟' : correct >= 9 ? 'Great interview!' : correct >= 6 ? 'Good effort!' : 'Interview practice done';
-        res.line = `${correct} / ${items.length} correct · about ${avg} s per question${fast ? ` · ⚡ ${fast} lightning answers` : ''}`;
-        if (fast) res.lines.push(`⚡ ${fast} answer${fast > 1 ? 's' : ''} under 10 s`);
-      }
+      const answered = items.filter((x) => x.ms), avg = answered.length ? Math.round(answered.reduce((a, x) => a + x.ms, 0) / answered.length / 1000) : 0;
+      const fast = items.filter((x) => x.ok && x.ms && x.ms < 10000).length, t = pstat(SES.page);
+      res.stars = ivStars(correct); res.medal = medalOf(correct); res.won = correct >= WIN_SCORE;
+      if (correct > t.ib) { if (t.ib >= 0) res.lines.push('📈 New best interview!'); t.ib = correct; }
+      store.pack('maths').interviews.push({ t: Date.now(), page: SES.page, score: correct, total: items.length, avg, fast, oral: SES.oral }); store.pack('maths').interviews = store.pack('maths').interviews.slice(-80);
+      pay = api.complete({ stars: res.stars, score: correct, won: res.won, recordAs: `mi-${SES.page}` });
+      res.head = correct >= 12 ? 'Perfect interview! 🌟' : correct >= WIN_SCORE ? 'Great interview!' : correct >= 6 ? 'Good effort!' : 'Interview practice done';
+      res.line = `${correct} / ${items.length} correct · about ${avg} s per question${fast ? ` · ⚡ ${fast} under 10 s` : ''}`;
+      if (!res.won) res.lines.push(`🎯 ${WIN_SCORE} / 12 wins the page prize`);
     }
     save(); res.pay = pay; SES = null;
     renderResult(res);
     playMusic(res.pct >= 60 ? 'victory' : 'island');
-    if (res.pct >= 80 || res.newPal || (pay && pay.firstBossWin)) { sfx.win(); confetti(140); } else if (res.pct >= 50) sfx.star(); else sfx.lose();
-    if (res.newPal) setTimeout(() => { if (!api.alive) return; const t = TOPIC[res.newPal]; modal(`<div style="text-align:center"><div class="medal" style="display:inline-block;width:120px;height:120px">${artHTML(t.pal[0])}</div><h3>New Maths Pal: ${t.pal[1]}!</h3><p>You scored 80%+ in ${t.en}. ${t.pal[1].split(' ')[0]} now lives on Maths Island and in your Maths Pals book.</p></div><div class="row" style="justify-content:center"><button class="btn pri" data-act="close">Yay! 🎉</button></div>`); confetti(); }, 900);
-    if (pay && pay.firstBossWin && pay.prize) setTimeout(() => { if (api.alive) api.openGift(pay.prize.id, { sub: `${MZONE[res.arg].boss.title} dropped a gift.` }); }, 1500);
+    if (res.pct >= 80 || (pay && pay.firstBossWin)) { sfx.win(); confetti(140); } else if (res.pct >= 50) sfx.star(); else sfx.lose();
+    if (pay && pay.firstBossWin && pay.prize) setTimeout(() => { if (api.alive) api.openGift(pay.prize.id, { title: 'Page prize!', sub: `You cleared the Page ${res.page} interview.` }); }, 1500);
   }
   function renderResult(res) {
     const k = res.kind, p = res.pay || {};
-    const big = k === 'test' ? (res.medal ? `<span class="medal" style="display:inline-block;width:74px;height:74px">${artHTML(res.medal[0])}</span> <span class="score">${res.pct}%</span>` : `<span class="score">${res.pct}%</span>`)
-      : k === 'interview' ? `<span class="score">${res.score} / ${res.total}</span>` : k === 'zone' ? `<span class="score">${res.score} / ${res.total}</span>` : '';
+    const big = k === 'interview' ? `${res.medal ? `<span class="medal" style="display:inline-block;width:74px;height:74px">${artHTML(res.medal[0])}</span> ` : ''}<span class="score">${res.score} / ${res.total}</span>` : '';
     const stars = `<div class="bigstars">${[0, 1, 2].map((i) => `<span class="${i < res.stars ? '' : 'off'}" style="animation-delay:${.2 + i * .25}s">⭐</span>`).join('')}</div>`;
     const rewards = [];
-    if (p.earned + p.bossBonus > 0) rewards.push(`<span class="reward">${artHTML('star')}+${p.earned + p.bossBonus} to your pouch${p.bossBonus ? ` (boss bonus +${p.bossBonus})` : ''} · you have ${p.pouch}</span>`);
+    if (p.earned + p.bossBonus > 0) rewards.push(`<span class="reward">${artHTML('star')}+${p.earned + p.bossBonus} to your pouch${p.bossBonus ? ` (page bonus +${p.bossBonus})` : ''} · you have ${p.pouch}</span>`);
     if (p.newBest) rewards.push('<span class="reward">📈 New best!</span>');
     res.lines.forEach((l) => rewards.push(`<span class="reward">${l}</span>`));
-    if (res.newPal) rewards.push(`<span class="reward">${artHTML(TOPIC[res.newPal].pal[0])}New Maths Pal!</span>`);
     if (p.newGifts) rewards.push('<button class="reward giftbtn" data-act="road">🎁 A Star Road gift is waiting — open it</button>');
     else if (p.nextRoad) rewards.push(`<span class="reward">${artHTML('gift')}Star Road: ${p.nextRoad.at - p.lifetime} more stars to the next gift</span>`);
     const rev = res.items.map((x) => `<li><span class="mk ${x.ok ? 'ok' : 'no'}">${x.ok ? '✓' : x.retry ? '↺' : '✗'}</span><div>
-       <div class="rq">${x.lab ? `<small class="src">${x.lab}</small> ` : ''}${x.q.html}</div>
+       <div class="rq"><small class="src">${x.q.lab}</small> ${x.q.html}</div>
        <div class="ra">${res.oral ? '' : `You: <b>${esc(entryText(x.q, x.entry))}</b>${x.ms ? ` <small>(${Math.round(x.ms / 1000)} s)</small>` : ''} · `}Answer: <b>${ansHTML(x.q)}</b>${x.form ? ` <small>— ${FORM_MSG[x.form]}</small>` : ''}</div>
        <details${x.ok ? '' : ' open'}><summary>How to do it</summary><ol class="steps">${x.q.steps.map((s) => `<li>${s}</li>`).join('')}</ol></details></div></li>`).join('');
-    const again = k === 'interview' ? `<button class="btn go" data-act="again">🎤 Another interview</button>` : k === 'zone' ? `<button class="btn go" data-act="again">${res.won ? '⚔️ Rematch' : '⚔️ Try again'}</button>` : k === 'fix' ? '' : '<button class="btn go" data-act="again">↻ Again</button>';
-    const other = k === 'practice' ? '<button class="btn pri" data-act="testintro">📝 Take the Test</button>' : k === 'test' && res.pct < 80 ? '<button class="btn pri" data-act="practice">✏️ Practise with hints</button>' : '';
+    const again = k === 'interview' ? '<button class="btn go" data-act="again">🎤 Another interview</button>' : k === 'fix' ? '' : '<button class="btn go" data-act="again">↻ Again</button>';
+    const other = k === 'practice' ? '<button class="btn pri" data-act="interview">🎤 Try the interview</button>' : k === 'interview' && !res.won ? '<button class="btn pri" data-act="practice">✏️ Practise with hints</button>' : '';
     setScreen(`
     <div class="rhead"><div class="${res.pct >= 60 ? 'jump' : ''}">${panda(res.pct >= 50 ? 'happy' : '')}</div><div>
       <h2>${res.head}</h2><div style="margin:8px 0">${big}${stars}</div><div style="font-weight:900;font-size:18px">${res.line}</div>
       <p style="font-weight:800;margin:8px 0 0">${bandMsg(res.pct)}</p>
       <div class="rewardrow">${rewards.join('')}</div></div></div>
-    <div class="btnrow">${again}${other}${res.topic ? '<button class="btn" data-act="topic">Topic page</button>' : ''}<button class="btn" data-act="exit">🏝️ Back to the island</button></div>
+    <div class="btnrow">${again}${other}${res.page ? `<button class="btn" data-act="page">📄 Page ${res.page}</button>` : ''}<button class="btn" data-act="exit">🏝️ Back to the island</button></div>
     <div class="panel"><h3>Review</h3><ul class="review">${rev}</ul></div>`);
     LAST = res;
   }
@@ -518,7 +491,7 @@ export default async function play(api) {
         else if (it.q.kind === 'time') Object.assign(it.entry, { h: got.h, m: got.m, ap: got.ap || it.entry.ap });
         else Object.assign(it.entry, { mode: got.mode, s: got.s || '', w: got.w || '', n: got.n || '', d: got.d || '' });
         $('#ansArea').innerHTML = answerHTML(it); refreshBoxes();
-        const h2 = $('#heard'); if (h2) h2.textContent = `I heard: “${alts[0]}” — check it, then tap ${SES.kind === 'interview' ? 'Answer' : isTestLike() ? 'Next' : 'Check'}.`;
+        const h2 = $('#heard'); if (h2) h2.textContent = `I heard: “${alts[0]}” — check it, then tap ${SES.kind === 'interview' ? 'Answer' : 'Check'}.`;
       };
       REC.onerror = (ev) => { toast(ev.error === 'not-allowed' ? 'Microphone is blocked — allow it in Safari settings' : "Couldn't hear that — try again"); };
       REC.onend = () => { REC = null; const b = $('.mic'); if (b) b.classList.remove('live'); };
@@ -533,14 +506,13 @@ export default async function play(api) {
     close: closeModal, yes() { const f = MODAL_YES; closeModal(); if (f) f(); },
     exit() { stopTimer(); hush(); api.exit(); },
     settings() { modal(settingsHTML()); },
-    set(a) { const [kk, v] = a.split(':'); S[kk] = v === 'true' ? true : v === 'false' ? false : /^\d+$/.test(v) ? +v : v; save(); modal(settingsHTML()); if (SES) renderPlay(); else if (m.interview) interviewIntro(m.interview); },
-    practice() { closeModal(); start('practice', m.topic); },
-    testintro() { testIntro(m.topic); },
-    starttest() { closeModal(); start('test', m.topic); },
-    startzone() { start('zone', m.zoneTest); },
-    startiv(a) { start('interview', m.interview, a === 'oral'); },
-    again() { if (!LAST) return; if (LAST.kind === 'interview') interviewIntro(m.interview); else if (LAST.kind === 'zone') start('zone', m.zoneTest); else start(LAST.kind, LAST.topic); },
-    topic() { topicScreen(m.topic); },
+    set(a) { const [kk, v] = a.split(':'); S[kk] = v === 'true' ? true : v === 'false' ? false : /^\d+$/.test(v) ? +v : v; save(); modal(settingsHTML()); if (SES) renderPlay(); },
+    practice() { closeModal(); if (m.kind === 'practice') start('practice', m.page); else api.switchTo(`mp-${m.page}`, { start: 'practice' }); },
+    interview() { closeModal(); if (m.kind === 'interview') interviewIntro(m.page); else api.switchTo(`mi-${m.page}`); },
+    page() { closeModal(); stopTimer(); hush(); SES = null; pageScreen(m.page || (LAST && LAST.page) || 1); },
+    drill(a) { start('drill', a); },
+    startiv(a) { start('interview', m.page, a === 'oral'); },
+    again() { if (!LAST) return; if (LAST.kind === 'interview') interviewIntro(LAST.page); else if (LAST.kind === 'fix') start('fix', LAST.arg); else start(LAST.kind, LAST.arg); },
     road() { api.openRoad(); },
     say() { const it = cur(); if (it) sayText(speakify(it.q.html)); },
     key: (a) => keyPress(a), mode: (a) => { setMode(a); sfx.tap(); },
@@ -551,11 +523,7 @@ export default async function play(api) {
     oclear() { const it = cur(); if (!it || it.done) return; it.entry = newEntry(it.q); $('#ansArea').innerHTML = answerHTML(it); },
     ap(a) { const it = cur(); if (!it || it.done) return; it.entry.ap = a; sfx.tap(); $('#ansArea').innerHTML = answerHTML(it); refreshBoxes(); clearFb(); },
     check: practiceCheck, hint: showHint, next: nextItem,
-    notes() { const t = TOPIC[cur().q.topic]; modal(`<h3>📘 ${t.en}</h3><ul class="notes">${t.notes.map((n) => `<li>${n}</li>`).join('')}</ul><div class="ex"><div class="exq">Example: ${t.ex.q}</div><ol class="steps" style="margin:6px 0 0;padding-left:20px">${t.ex.steps.map((s) => `<li>${s}</li>`).join('')}</ol></div><div class="row"><button class="btn pri" data-act="close">Got it</button></div>`); },
-    tnext() { if (SES.i < SES.items.length - 1) { SES.i++; sfx.whoosh(); onItemShown(); renderPlay(); } },
-    prev() { if (SES.i > 0) { SES.i--; onItemShown(); renderPlay(); } },
-    jump(a) { SES.i = +a; onItemShown(); renderPlay(); },
-    finishtest: () => finishTest(false),
+    notes() { const g = GEN[cur().q.gen]; modal(`<h3>📘 Page ${g.page} · ${g.lab}: ${g.skill}</h3><p style="font-weight:800;font-size:18px">${g.tip}</p><div class="row"><button class="btn pri" data-act="close">Got it</button></div>`); },
     ivsubmit: () => interviewSubmit(false),
     pass() { const it = cur(); if (!it || it.done) return; it.entry = newEntry(it.q); interviewSubmit(false, true); },
     reveal() { const it = cur(); if (!it) return; it.revealed = true; it.ms = Date.now() - SES.qT0; $('#ansArea').innerHTML = answerHTML(it); },
@@ -580,7 +548,7 @@ export default async function play(api) {
     if (!api.alive) return document.removeEventListener('keydown', onKey);
     if (!$('#modal').hidden) { if (e.key === 'Escape') closeModal(); return; }
     if (!SES) return; const it = cur(); if (!it) return;
-    if (e.key === 'Enter') { e.preventDefault(); if (SES.oral) return; if (SES.kind === 'interview') return interviewSubmit(false); if (SES.kind === 'test' || SES.kind === 'zone') return SES.i < SES.items.length - 1 ? ACT.tnext() : finishTest(false); return it.done ? nextItem() : practiceCheck(); }
+    if (e.key === 'Enter') { e.preventDefault(); if (SES.oral) return; if (SES.kind === 'interview') return interviewSubmit(false); return it.done ? nextItem() : practiceCheck(); }
     const inBox = e.composedPath && e.composedPath().some((n) => n.classList && n.classList.contains('abox'));
     if (inBox) return;
     if (/^[0-9.]$/.test(e.key)) { keyPress(e.key); e.preventDefault(); } else if (e.key === 'Backspace') { keyPress('del'); e.preventDefault(); } else if (e.key === '/') keyPress('f');
@@ -596,9 +564,10 @@ export default async function play(api) {
 
   /* ---------- go ---------- */
   playMusic('lab');
-  if (m.topic) topicScreen(m.topic);
-  else if (m.interview) interviewIntro(m.interview);
-  else if (m.zoneTest) zoneIntro(m.zoneTest);
-  else if (m.fix) { const gens = (api.opts && api.opts.gens) || [...new Set(store.mistakesFor('maths').map((x) => x.gen))]; if (!gens.length) { setScreen('<div class="panel"><h3>Nothing to fix 🎉</h3><p>Your maths Oops Book is empty.</p><button class="btn" data-act="exit">Back to the island</button></div>'); } else start('fix', gens); }
-  void zoneOfTopic;
+  const o = api.opts || {};
+  if (m.fix) { const gens = o.gens || [...new Set(store.mistakesFor('maths').map((x) => x.gen).filter((g) => GEN[g]))]; if (!gens.length) setScreen('<div class="panel"><h3>Nothing to fix 🎉</h3><p>Your maths Oops Book is empty.</p><button class="btn" data-act="exit">Back to the island</button></div>'); else start('fix', gens); }
+  else if (o.drill && GEN[o.drill]) start('drill', o.drill);
+  else if (m.kind === 'interview') interviewIntro(m.page);
+  else if (o.start === 'practice') start('practice', m.page);
+  else pageScreen(m.page);
 }

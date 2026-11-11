@@ -973,3 +973,8 @@ img { display: block; -webkit-user-drag: none; }
 @media (max-width: 760px) { .hub-top { flex-wrap: wrap; } .hub-top .spacer { display: none; } }
 /* maths and 成語大冒險 work well upright, so no "turn sideways" hint there */
 #app:has(.mw-host) #rotate-hint, #app:has(.cn-frame) #rotate-hint { display: none; }
+
+/* islands with many zones (Maths Island: 8 pages) — keep the chips on one row on iPad */
+.zone-chips.many { gap: 6px; }
+.zone-chips.many .zone-chip { font-size: 15px; gap: 4px; padding: 3px 9px 3px 3px; }
+.zone-chips.many .zone-chip .art { width: 32px; height: 32px; }

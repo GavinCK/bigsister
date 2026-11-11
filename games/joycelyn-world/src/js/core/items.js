@@ -34,13 +34,15 @@ export const PETS = [
   { id: 'p-koala', name: 'Koala', art: 'koala', price: 14 },
   { id: 'p-unicorn', name: 'Unicorn', art: 'unicorn', only: 'road' },
   { id: 'p-dragon', name: 'Baby dragon', art: 'dragon', only: 'boss', from: 'Shadow Dragon' },
-  // Maths Island zone-test prizes
-  { id: 'p-octopus', name: 'Octopus', art: 'octopus', only: 'boss', from: 'Captain Calc' },
-  { id: 'p-flamingo', name: 'Flamingo', art: 'flamingo', only: 'boss', from: 'Squiddy Slice' },
-  { id: 'p-kangaroo', name: 'Kangaroo', art: 'kangaroo', only: 'boss', from: 'King Balance' },
-  { id: 'p-peacock', name: 'Peacock', art: 'peacock', only: 'boss', from: 'Mammoth Prism' },
-  { id: 'p-ladybug', name: 'Ladybird', art: 'ladybug', only: 'boss', from: 'Major Metre' },
-  { id: 'p-trex', name: 'Baby T-rex', art: 'trex', only: 'boss', from: 'Rex the Riddler' },
+  // Maths Island prizes: the first Interview with 10/12 or more on each page
+  { id: 'p-octopus', name: 'Octopus', art: 'octopus', only: 'boss', from: 'Page 1 interview' },
+  { id: 'p-flamingo', name: 'Flamingo', art: 'flamingo', only: 'boss', from: 'Page 2 interview' },
+  { id: 'p-kangaroo', name: 'Kangaroo', art: 'kangaroo', only: 'boss', from: 'Page 3 interview' },
+  { id: 'p-peacock', name: 'Peacock', art: 'peacock', only: 'boss', from: 'Page 4 interview' },
+  { id: 'p-ladybug', name: 'Ladybird', art: 'ladybug', only: 'boss', from: 'Page 5 interview' },
+  { id: 'p-otter', name: 'Otter', art: 'otter', only: 'boss', from: 'Page 6 interview' },
+  { id: 'p-hedgehog', name: 'Hedgehog', art: 'hedgehog', only: 'boss', from: 'Page 7 interview' },
+  { id: 'p-trex', name: 'Baby T-rex', art: 'trex', only: 'boss', from: 'Page 8 interview' },
 ];
 
 export const DECOR = [
@@ -85,7 +87,7 @@ export const ALL_ITEMS = Object.fromEntries([
 // First win against each zone boss
 export const BOSS_PRIZES = {
   beach: 'sailboat', lab: 'c-astronaut', greenhouse: 'fountain', peaks: 'snowman', jungle: 'p-dragon', savanna: 'c-cook', volcano: 'c-superhero',
-  'm-calc': 'p-octopus', 'm-frac': 'p-flamingo', 'm-eq': 'p-kangaroo', 'm-shape': 'p-peacock', 'm-measure': 'p-ladybug', 'm-peak': 'p-trex',
+  'm-p1': 'p-octopus', 'm-p2': 'p-flamingo', 'm-p3': 'p-kangaroo', 'm-p4': 'p-peacock', 'm-p5': 'p-ladybug', 'm-p6': 'p-otter', 'm-p7': 'p-hedgehog', 'm-p8': 'p-trex',
 };
 export const ISLAND_NAME = { science: 'Biodiversity Island', maths: 'Maths Island', chinese: 'Idiom Island' };
 

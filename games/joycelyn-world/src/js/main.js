@@ -147,7 +147,7 @@ function showHub() {
       h('button', { class: 'pill', onclick: () => { sfx.tap(); openOops(overlay, shell(), PACKS, showHub, p ? p.id : 'all'); clearToasts(); } }, art('memo'), h('span', { class: 'pl' }, `Oops ${p ? store.mistakesFor(p.id).length : nOops}`)),
       h('button', { class: 'iconbtn', 'aria-label': 'For grown-ups', onclick: () => { clearToasts(); openParents(overlay, shell(), PACKS, showHub); } }, art('bulb')),
       musicBtn, sfxBtn),
-    p ? h('div', { class: 'zone-chips' },
+    p ? h('div', { class: `zone-chips ${p.zones.length > 7 ? 'many' : ''}` },
       h('button', { class: 'zone-chip map-chip', onclick: () => showMap() }, art('worldmap'), h('span', {}, 'Map')),
       p.zones.map((z) => h('button', { class: `zone-chip ${zoneCrown(z) ? 'beaten' : ''}`, onclick: () => openZone(p.id, z.id) }, art(z.art), h('span', {}, z.title), h('span', { class: 'st' }, `★${zoneStars(p, z)}`))))
       : h('div', { class: 'island-cards' }, PACKS.map((q) => { const mx = islandMax(q); return h('button', { class: 'island-card', style: { '--ic': q.color }, onclick: () => enterIsland(q.id) },

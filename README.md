@@ -14,7 +14,7 @@
 | 遊戲 | 資料夾 | 對象 | 內容 | 狀態 |
 |---|---|---|---|---|
 | 🐼 成語大冒險 | [`games/chengyu-adventure`](games/chengyu-adventure/) | 小六 | 成語、詞語、量詞、擬聲詞、複句、關聯詞、同音形近字、修辭 | 使用中 |
-| 🏝️ Joycelyn's Islands（學習群島） | [`games/joycelyn-world`](games/joycelyn-world/) | 小六 | 一個網頁三個島：Biodiversity Island（常識 Unit 1，英文）、Maths Island（升中面試心算，全英文）、成語島（開成語大冒險）；星星、商店、錯題簿共用 | 新 |
+| 🏝️ Joycelyn's Islands（學習群島） | [`games/joycelyn-world`](games/joycelyn-world/) | 小六 | 一個網頁三個島：Biodiversity Island（常識 Unit 1，英文）、Maths Island（升中面試心算，全英文，一頁卷一個區）、成語島（開成語大冒險）；星星、商店、錯題簿共用 | 新 |
 
 上線網址（呢個 repo 嘅 GitHub Pages）：
 - 遊戲大廳：https://gavinck.github.io/bigsister/
@@ -41,7 +41,8 @@ bigsister/
 ├── tools/
 │   ├── smoke_test.py           成語大冒險自動打通測試（Playwright）
 │   ├── build_world.mjs         將 joycelyn-world/src build 成單一 HTML
-│   └── smoke_world.py          群島自動測試（三個島＋共用獎勵＋3D，Playwright）
+│   ├── smoke_world.py          群島自動測試（三個島＋共用獎勵＋3D，Playwright）
+│   └── maths_pages_doc.mjs     生成 Maths Island 8 頁 × 12 題對照表（docs/maths-pages.md）
 └── CLAUDE.md                   俾之後接手嘅 AI 睇嘅工作守則
 ```
 
